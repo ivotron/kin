@@ -1,0 +1,6 @@
+*.sw?
+*.o
+*.a
+.DS_Store
+build
+src/test/runtime/*/workdir/

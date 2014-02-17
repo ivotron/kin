@@ -1,0 +1,10 @@
+-I./src/
+-I./src/test
+-I./src/test/mpi_mock/
+-I./src/test/gmock/include/
+-I./src/test/gmock/gtest/include/
+-I/usr/include/mpi/
+-I/usr/include/
+-Wall
+-W
+-O
