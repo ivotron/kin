@@ -28,6 +28,9 @@ namespace versos
      */
     virtual const Version& checkout(const std::string& commitId) = 0;
 
+    // TODO: checkout() only allows access to committed versions. We can add a retrieve() call that allows to 
+    // get a staged versions
+
     /**
      * creates a version based on a given one.
      */

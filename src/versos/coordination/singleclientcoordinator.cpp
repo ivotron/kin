@@ -24,7 +24,12 @@ namespace versos
 
   const Version& SingleClientCoordinator::checkout(const std::string& id)
   {
-    return refdb.checkout(id);
+    const Version& v = refdb.checkout(id);
+
+    if (!v.isCommitted())
+      return Version::NOT_COMMITTED;
+
+    return v;
   }
 
   Version& SingleClientCoordinator::create(const Version& parent)
@@ -62,11 +67,7 @@ namespace versos
 
   int SingleClientCoordinator::commit(const Version& v)
   {
-    refdb.commit(v);
-
-    boost::ptr_set<VersionedObject>::iterator it;
-
-    return 0;
+    return refdb.commit(v);
   }
 
   Coordinator* SingleClientCoordinator::clone() const

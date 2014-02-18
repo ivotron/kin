@@ -34,9 +34,9 @@
  *              - remove
  *
  * a repository just calls to the underlying coordinator. The coordinator uses a refdb to store metadata about 
- * revisions. It also makes use of the @c snapshot()/remove() functionality of the objectdb (implemented 
- * through the @c VersionedObject interface) in order to make sure that object snapshots are kept in sync with 
- * the metadata.
+ * revisions and makes sure that the integrity of the refdb is consistent [^consistency_example]. It also 
+ * makes use of the @c snapshot()/remove() functionality of the objectdb (implemented through the @c 
+ * VersionedObject interface) in order to make sure that object snapshots are kept in sync with the metadata.
  *
  * The user primarly interfaces with @c Repository and @c Version classes. The former to @c checkout() 
  * existing revisions and @c create() new ones based on existing ones; the latter to @c add()/remove() objects 
@@ -46,6 +46,9 @@
  * The main feature of versos is its pluggability. Depending on which implementations (and their 
  * configuration) of the tree main components of the library (@c Coordinator, @c RefDB and @c VersionedObject) 
  * are selected at instantiation-time, the consistency guarantees change.
+ *
+ * [^consistency_example]: for example, when a user @c commit()'s a revision and that revision becomes the 
+ * head, what happens if another user tries to .
  */
 namespace versos
 {
@@ -103,26 +106,39 @@ namespace versos
      */
     const std::string& getName() const;
 
-    // TODO: currently, every time a coordinator commits, the associated version becomes the HEAD of the repo. 
-    // We would like to be more flexible and support:
-    //
-    //   - push
-    //   - pull
-    //   - rebase
-    //   - merge
-    //
-    // i.e. multiple users/instances can collaborate on the same repo.
-    //
-    // TODO: we need a @c Reference object to represent tags, branches, etc. This introduces a new element in 
-    // the metadata hierarchy, so things would look like:
-    //
-    //   - repository
-    //       - reference
-    //           - revisions
-    //               - objects
-    //
-    // TODO: I still don't know what is the difference between versos and libgit2 in terms of its internal 
-    // architecture
+    /**
+     * TODO: currently, every time a coordinator commits, the associated version becomes the HEAD of the repo. 
+     * We would like to be more flexible and support:
+     *
+     *   - push
+     *   - pull
+     *   - rebase
+     *   - merge
+     *
+     * i.e. multiple users/instances can collaborate on the same repo.
+     *
+     * TODO: we need a @c Reference object to represent tags, branches, etc. This introduces a new element in 
+     * the metadata hierarchy, so things would look like:
+     *
+     *   - repository
+     *       - reference
+     *           - revisions
+     *               - objects
+     *
+     * TODO: differences with Git (more specifically libgit2, although it should be in theory equivalent):
+     *
+     *   - HASH assignment is done at commit-time, not at index (a.k.a. stage) create-time. Git has an index,
+     *     which is a container of diffs and it adds to it and then assigns a hash to it later. Currently, we 
+     *     identify objects by appending the HASH of the commit to the name of the object, so we create the 
+     *     new hash at "index-creation" time (from a git POV). But this doesn't necessarily have to be like 
+     *     this, the only thing that matters is that we can track the changes for a set of objects and then 
+     *     later we can assign a hash to them. In terms of abstractions though, I think it's easier to 
+     *     interface with a single @c Version object for both reading committed revisions and modifying 
+     *     uncommitted ones.
+     *   - related to the above, we allow to have multiple staging areas (git's indexes) concurrently, whereas
+     *     git (at least is default c implementation) assumes only one index exists. This has the consequence 
+     *     of risking consistency (eg. what if two independent instances update the index at the same time)?
+     */
   };
 }
 #endif

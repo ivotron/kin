@@ -27,9 +27,6 @@ namespace versos
 
     const Version& v = *(revisions.find(id)->second);
 
-    if (!v.isCommitted())
-      return Version::NOT_COMMITTED;
-
     return v;
   }
 
@@ -55,6 +52,10 @@ namespace versos
 
   int MemRefDB::commit(const Version& v)
   {
+    if (v.getParentId() != getHeadId())
+      // HEAD changed since @c v's creation, so committing would break the versioning sequence
+      return -1;
+
     headId = v.getId();
 
     return 0;
