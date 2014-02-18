@@ -21,12 +21,12 @@ namespace versos
     /**
      * retrieves latest committed version.
      */
-    virtual int getHeadId(uint64_t& id) = 0;
+    virtual int getHeadId(std::string& id) = 0;
 
     /**
      * checks out a version.
      */
-    virtual Version& checkout(uint64_t id) = 0;
+    virtual const Version& checkout(const std::string& commitId) = 0;
 
     /**
      * creates a version based on a given one.
@@ -39,7 +39,7 @@ namespace versos
     virtual int add(const Version& v, VersionedObject& o) = 0;
 
     /**
-     * removes an object to a version
+     * removes an object from a version
      */
     virtual int remove(const Version& v, VersionedObject& o) = 0;
 
@@ -47,6 +47,11 @@ namespace versos
      * commits.
      */
     virtual int commit(const Version& v) = 0;
+
+    /**
+     * initializes an empty repo. fails if non-empty.
+     */
+    virtual int init() = 0;
 
     /**
      * copies this object.

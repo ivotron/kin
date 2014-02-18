@@ -28,11 +28,14 @@ namespace versos
     virtual ~VersionedObject() {}
 
     /**
-     * removes the specified version of this object.
+     * removes the given version of this object.
      */
     virtual int remove(const Version& v) = 0;
 
-    virtual int create(const Version& v) = 0;
+    /**
+     * creates an object based on the given parent.
+     */
+    virtual int snapshot(const Version& parent, const Version& child) = 0;
 
     const std::string& getInterfaceName() const { return interfaceName; }
     const std::string& getBaseName() const { return baseName; }
@@ -46,21 +49,6 @@ namespace versos
 
   private:
     virtual VersionedObject* do_clone() const = 0;
-
-    // TODO: add methods common to all objects . For example:
-    //
-    //   virtual int write(const Version& v, ...);
-    //   virtual int read(const Version& v, ...);
-    //
-    // the above allows the user to do:
-    //
-    //   o.write(v, ...);
-    //
-    // instead of
-    //
-    //   ioctx.write(o.getId(v), ...);
-    //
-    // just syntactic sugar :)
   };
 
   VersionedObject* new_clone( const VersionedObject& vo )
@@ -103,6 +91,14 @@ namespace versos
    RbdVersionedObject(const std::string& id);
    const std::string& getImage();
    };
+   */
+
+  /*
+   * ObjDB
+   * {
+   *   obj_handle add(id, baseName);
+   *         void remove(id, baseName);
+   * }
    */
 }
 #endif

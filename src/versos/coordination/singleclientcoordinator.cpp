@@ -1,46 +1,56 @@
 #include "versos/coordination/singleclientcoordinator.h"
 
+#include <boost/ptr_container/ptr_set.hpp>
+
 namespace versos
 {
-  SingleClientCoordinator::SingleClientCoordinator() : io(NONE), repo(Repository::NONE)
+  SingleClientCoordinator::SingleClientCoordinator() : refdb(RefDB::NONE)
   {
   }
 
-  SingleClientCoordinator::SingleClientCoordinator(Repository& repo, librados::IoCtx& io) :
-    io(io), repo(repo)
+  SingleClientCoordinator::SingleClientCoordinator(RefDB& refdb) : refdb(refdb)
   {
   }
 
-  int SingleClientCoordinator::getHeadId(uint64_t& head)
+  int SingleClientCoordinator::getHeadId(std::string& id)
   {
-    librados::bufferlist b;
+    id = refdb.getHeadId();
 
-    //if (ioctx.getxattr(getMetadataObjectName(), bl, len, off) < 0)
-      //return -1;
+    if (id.empty())
+      return -1;
 
-    // simple:
-    //
-    //   1. Query the "head" object which points to the highest committed id
-    //   2. return
-    //
     return 0;
   }
 
-  Version& SingleClientCoordinator::checkout(uint64_t id)
+  const Version& SingleClientCoordinator::checkout(const std::string& id)
   {
-    // 1. get the list of object names at id
-    // 2. instantiate and populate @c Version object with object list
-    // 3. return
+    return refdb.checkout(id);
   }
 
   Version& SingleClientCoordinator::create(const Version& parent)
   {
-    // 1. get new id for this version
-    // 2. instantiate @c Version with new id
+    if (parent == Version::NOT_FOUND || parent == Version::ERROR)
+      return Version::ERROR;
+
+    if (!parent.isCommitted())
+      return Version::PARENT_NOT_COMMITTED;
+
+    Version& v = refdb.create(parent, *this);
+
+    if (v == Version::ERROR)
+      return v;
+
+    boost::ptr_set<VersionedObject>::iterator it;
+
+    for (it = parent.getObjects().begin(); it != parent.getObjects().end(); ++it)
+      it->snapshot(parent, v);
+
+    return v;
   }
 
-  int SingleClientCoordinator::add(const Version&, VersionedObject&)
+  int SingleClientCoordinator::add(const Version& v, VersionedObject& o)
   {
+    o.snapshot(v, checkout(v.getParentId()));
     return 0;
   }
 
@@ -52,21 +62,20 @@ namespace versos
 
   int SingleClientCoordinator::commit(const Version& v)
   {
-    // simple:
-    //
-    // 1. write all the contents of v to the metadata object
-    // 2. loop on the objects list and create a snapshot for each
-    // 3. return
-    //
-    // log-structured:
-    //
-    // 1. get the diff of object removal/deletion w.r.t. parent version
-    // 2. for each added/removed object, add/remove it to the metadata object
-    // 3. go to 2-3 of simple
+    refdb.commit(v);
+
+    boost::ptr_set<VersionedObject>::iterator it;
+
+    return 0;
   }
 
   Coordinator* SingleClientCoordinator::clone() const
   {
-    return new SingleClientCoordinator(repo, io);
+    return new SingleClientCoordinator(refdb);
+  }
+
+  int SingleClientCoordinator::init()
+  {
+    return refdb.init();
   }
 }

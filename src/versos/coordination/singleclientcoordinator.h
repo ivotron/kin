@@ -5,33 +5,32 @@
 #ifndef SINGLE_CLIENT_COORDINATOR_H
 #define SINGLE_CLIENT_COORDINATOR_H
 
-#include "versos/repository.h"
 #include "versos/coordination/coordinator.h"
-
-#include "rados/librados.hpp"
+#include "versos/refdb/refdb.h"
 
 namespace versos
 {
   class SingleClientCoordinator : public Coordinator
   {
   private:
-    static librados::IoCtx NONE;
-    librados::IoCtx& io;
-    Repository& repo;
+    RefDB& refdb;
 
   public:
     SingleClientCoordinator();
-    SingleClientCoordinator(Repository& repo, librados::IoCtx& io);
+    SingleClientCoordinator(RefDB& refdb);
     ~SingleClientCoordinator();
 
     // inherited
-    int getHeadId(uint64_t& id);
-    Version& checkout(uint64_t id);
+    int getHeadId(std::string& id);
+    const Version& checkout(const std::string& id);
     Version& create(const Version& parent);
     int add(const Version& v, VersionedObject& o);
     int remove(const Version& v, VersionedObject& o);
     int commit(const Version& v);
+    int init();
     Coordinator* clone() const;
+  private:
+    std::string getMetadataObjectName();
   };
 }
 #endif

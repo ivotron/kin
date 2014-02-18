@@ -30,23 +30,29 @@ namespace versos
     static Version NOT_FOUND;
     static Version ERROR;
     static Version PARENT_FOR_ROOT;
-    static Version NO_VERSION;
+    static Version PARENT_NOT_FOUND;
+    static Version PARENT_NOT_RETRIEVED;
+    static Version NOT_COMMITTED;
+    static Version PARENT_NOT_COMMITTED;
 
   private:
-    uint64_t id;
-    const Version& parent;
+    static Version INVALID;
+
+    const std::string id;
+    const std::string parentId;
     Status status;
     boost::ptr_set<VersionedObject> objects;
     Coordinator* coordinator;
 
   public:
-
-    Version(uint64_t id, const Version& parent, Coordinator& c);
-    Version();
+    Version(std::string id, const Version& parent, Coordinator& c);
+    Version(std::string id, const std::string parentId, const boost::ptr_set<VersionedObject>& objects, 
+        Coordinator& c);
     Version(const Version& copy);
     ~Version();
-    uint64_t getStatus() const;
-    uint64_t getId() const;
+
+    Status getStatus() const;
+    const std::string& getId() const;
 
     /**
      * Adds an object to this version. Fails if version is read only.
@@ -64,18 +70,30 @@ namespace versos
     int commit();
 
     /**
-     * can I add/remove?
+     * commits the staged objects.
+     */
+    const boost::ptr_set<VersionedObject>& getObjects() const;
+
+    /**
+     * can I add/remove to this version?
+     */
+    const std::string& getParentId() const;
+
+    /**
+     * can I add/remove to this version?
      */
     bool isCommitted() const;
+
+    /**
+     * whether the given object is part of this version
+     */
     bool contains(const VersionedObject& o) const;
 
     bool operator== (const Version& other) const;
     bool operator!= (const Version& other) const;
-    bool operator< (const Version& other) const;
 
   private:
-    Version(Status status, uint64_t id);
+    Version(const std::string& id);
   };
 }
-
 #endif
