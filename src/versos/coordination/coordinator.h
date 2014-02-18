@@ -1,12 +1,13 @@
 #ifndef COORDINATOR_H
 #define COORDINATOR_H
 
-#include <rados/librados.hpp>
+#include <string>
 
 namespace versos
 {
   class Version;
   class VersionedObject;
+
   /**
    * coordinates repository-level operations executed by one or more clients.
    *

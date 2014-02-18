@@ -2,7 +2,6 @@
 
 namespace versos
 {
-  Version Version::INVALID = Version("0"); // used internally only
   Version Version::ERROR = Version("1");
   Version Version::NOT_FOUND = Version("2");
   Version Version::PARENT_FOR_ROOT = Version("3");

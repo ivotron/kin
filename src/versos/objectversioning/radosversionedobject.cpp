@@ -28,7 +28,7 @@ namespace versos
 
   std::string RadosVersionedObject::getId(const Version& v) const
   {
-    if (v == Version::NOT_FOUND || v == Version::ERROR || v == Version::EMPTY)
+    if (v == Version::NOT_FOUND || v == Version::ERROR)
       return "";
 
     if (!v.contains(*this))
@@ -51,6 +51,16 @@ namespace versos
       return -2;
 
     return ioctx.write(oid, bl, len, off);
+  }
+
+  int RadosVersionedObject::snapshot(const Version&, const Version&)
+  {
+    // TODO: we currently do nothing since we assume that the contents of the file are entirely overwritten 
+    // between versions.
+    //
+    // TODO: in order to address the above, we have to use use rados_clone_range()
+
+    return 0;
   }
 
   int RadosVersionedObject::read(const Version& v, librados::bufferlist& bl, size_t len, uint64_t off)

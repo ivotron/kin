@@ -1,6 +1,3 @@
-/**
- *
- */
 #include "versos/repository.h"
 
 namespace versos
@@ -10,16 +7,21 @@ namespace versos
   {
   }
 
-  const Version& Repository::checkout(const std::string& id)
+  const Version& Repository::checkout(const std::string& id) const
   {
     return coordinator->checkout(id);
   }
 
-  const Version& Repository::checkoutHEAD()
+  int Repository::init()
+  {
+    return coordinator->init();
+  }
+
+  const Version& Repository::checkoutHEAD() const
   {
     std::string headId;
 
-    if (coordinator->getHeadId(headId) < 0)
+    if (coordinator->getHeadId(headId))
       return Version::ERROR;
 
     return checkout(headId);
@@ -28,5 +30,9 @@ namespace versos
   Version& Repository::create(const std::string& parentId)
   {
     return coordinator->create(checkout(parentId));
+  }
+
+  void Repository::close()
+  {
   }
 }

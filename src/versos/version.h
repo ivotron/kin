@@ -36,8 +36,6 @@ namespace versos
     static Version PARENT_NOT_COMMITTED;
 
   private:
-    static Version INVALID;
-
     const std::string id;
     const std::string parentId;
     Status status;
