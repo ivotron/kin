@@ -23,7 +23,7 @@ namespace versos
 
     // inherited
     int create(const Version& parent, const Version& child);
-    int commit();
+    int commit(const Version& v);
     int remove(const Version& v);
 
     // mem-specific

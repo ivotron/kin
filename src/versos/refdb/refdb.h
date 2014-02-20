@@ -27,7 +27,7 @@ namespace versos
     virtual bool isEmpty() const;
     virtual const std::string& getHeadId() const;
     virtual const Version& checkout(const std::string&);
-    virtual Version& create(const Version&, Coordinator&);
+    virtual Version& create(const Version&, Coordinator&, const std::string&);
 
     virtual int remove(const Version&);
     /**

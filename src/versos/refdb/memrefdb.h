@@ -23,7 +23,7 @@ namespace versos
     bool isEmpty() const;
     const std::string& getHeadId() const;
     const Version& checkout(const std::string& id);
-    Version& create(const Version& parent, Coordinator& coordinator);
+    Version& create(const Version& parent, Coordinator& coordinator, const std::string& msg);
     int remove(const Version& uncommitted);
     int lock(const Version&, int);
     int commit(const Version&);

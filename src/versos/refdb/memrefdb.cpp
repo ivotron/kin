@@ -54,11 +54,13 @@ namespace versos
     return v;
   }
 
-  Version& MemRefDB::create(const Version& parent, Coordinator& coordinator)
+  Version& MemRefDB::create(const Version& parent, Coordinator& coordinator, const std::string& msg)
   {
     unsigned char childSHA1[20];
 
-    SHA1((const unsigned char*) parent.getId().c_str(), parent.getId().size(), childSHA1);
+    std::string d = parent.getId() + msg;
+
+    SHA1((const unsigned char*) d.c_str(), parent.getId().size(), childSHA1);
 
     std::string childHash(childSHA1, childSHA1 + 20);
 

@@ -21,7 +21,7 @@ namespace versos
     return 0;
   }
 
-  int MemVersionedObject::commit()
+  int MemVersionedObject::commit(const Version&)
   {
     return 0;
   }

@@ -158,8 +158,17 @@ namespace versos
      *     snapshotting as a first-class citizen in the @c VersionedObject interface, so we take advantage of 
      *     backends that can provide efficient ways of doing this.
      *
-     * TODO: hashes (SHA1) used to identify versions aren't taking into account client-provided seeds, which 
-     * can cause colisions
+     * TODO: mpi coordinator doesn't pass to leader the objects that it adds/removes to a transaction. The 
+     * assumption is that there's a way to check this on the backend.
+     *
+     * TODO: an optimization for mpi coordinator: use two refDB instances, the leader uses the one given by 
+     * the user (eg. redisrefdb) while every other rank uses a memrefdb that serves as a cache. Since ranks 
+     * operate in a tightly-coupled manner, we only need to "bootstrap" the local memrefdb so that any other 
+     * rank's local memrefdb contains the "same" data in terms of committed versions, but can differ on the 
+     * current iteration's contents. Then, at every commit, the local memrefdb synchronizes with the one held 
+     * by the leader's and then the leaders sync's its memrefdb with the backend (eg. redisrefdb). 
+     * Alternatively, we can just make every rank talk to the leader every time an object is added/removed. Or 
+     * we could just cache add/remove's and have every other operation talk to the leader.
      */
   };
 }

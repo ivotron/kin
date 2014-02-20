@@ -39,7 +39,7 @@ namespace versos
      * marks the object as committed. From a high-level point of view, this signals the end of writes to the 
      * given object. Future attempts to write to the object will fail.
      */
-    virtual int commit() = 0;
+    virtual int commit(const Version& v) = 0;
     /**
      * removes the given version of this object.
      */

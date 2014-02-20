@@ -10,7 +10,7 @@ namespace versos
   {
   }
 
-  SingleClientCoordinator::SingleClientCoordinator(RefDB& refdb) : refdb(refdb)
+  SingleClientCoordinator::SingleClientCoordinator(RefDB& refdb) : refdb(refdb), msg("single")
   {
   }
 
@@ -46,7 +46,7 @@ namespace versos
     if (!parent.isCommitted())
       return Version::PARENT_NOT_COMMITTED;
 
-    Version& v = refdb.create(parent, *this);
+    Version& v = refdb.create(parent, *this, msg);
 
     if (v == Version::ERROR)
       return v;
@@ -79,7 +79,12 @@ namespace versos
 
   int SingleClientCoordinator::commit(const Version& v)
   {
-    // TODO: iterate over the objects and call fillSnapshotHoles(parent, child)
+    boost::ptr_set<VersionedObject>::iterator it;
+
+    for (it = v.getObjects().begin(); it != v.getObjects().end(); ++it)
+      if (it->commit(v))
+        return -1;
+
     return refdb.commit(v);
   }
 

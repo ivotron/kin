@@ -13,9 +13,9 @@ namespace versos
 
   class SingleClientCoordinator : public Coordinator
   {
-  private:
+  protected:
     RefDB& refdb;
-
+    std::string msg;
   public:
     SingleClientCoordinator();
     SingleClientCoordinator(RefDB& refdb);
@@ -31,8 +31,6 @@ namespace versos
     int initRepository();
     bool isRepositoryEmpty();
     Coordinator* clone() const;
-  private:
-    std::string getMetadataObjectName();
   };
 }
 #endif

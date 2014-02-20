@@ -18,7 +18,7 @@ namespace versos
   bool RefDB::isEmpty() const {return true;}
   const std::string& RefDB::getHeadId() const {return noneOrValid;}
   const Version& RefDB::checkout(const std::string&) {return Version::ERROR;}
-  Version& RefDB::create(const Version&, Coordinator&) {return Version::ERROR;}
+  Version& RefDB::create(const Version&, Coordinator&, const std::string&) {return Version::ERROR;}
 
   int RefDB::remove(const Version&) {return 0;}
   /**

@@ -44,7 +44,7 @@ namespace versos
     return 0;
   }
 
-  int RadosVersionedObject::commit()
+  int RadosVersionedObject::commit(const Version&)
   {
     // TODO: if create() uses rados_clone_range() and snapshots the whole object, we don't need to do anything
     //
