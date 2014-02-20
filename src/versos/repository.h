@@ -157,6 +157,9 @@ namespace versos
      *     assume POSIX-like backend) or if it's just an implementation issue. In either case, we assume 
      *     snapshotting as a first-class citizen in the @c VersionedObject interface, so we take advantage of 
      *     backends that can provide efficient ways of doing this.
+     *
+     * TODO: hashes (SHA1) used to identify versions aren't taking into account client-provided seeds, which 
+     * can cause colisions
      */
   };
 }

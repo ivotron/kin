@@ -1,6 +1,6 @@
 #include "versos/refdb/memrefdb.h"
 
-#include <boost/lexical_cast.hpp>
+#include <openssl/sha.h>
 
 namespace versos
 {
@@ -56,18 +56,13 @@ namespace versos
 
   Version& MemRefDB::create(const Version& parent, Coordinator& coordinator)
   {
-    std::string childId;
-    try
-    {
-      int parentId = boost::lexical_cast<uint64_t>(parent.getId());
-      childId = boost::lexical_cast<std::string>(parentId + 1); // TODO: get SHA1
-    }
-    catch(boost::bad_lexical_cast&)
-    {
-      return Version::ERROR;
-    }
+    unsigned char childSHA1[20];
 
-    boost::shared_ptr<Version> v(new Version(childId, parent, coordinator));
+    SHA1((const unsigned char*) parent.getId().c_str(), parent.getId().size(), childSHA1);
+
+    std::string childHash(childSHA1, childSHA1 + 20);
+
+    boost::shared_ptr<Version> v(new Version(childHash, parent, coordinator));
 
     revisions[v->getId()] = v;
 

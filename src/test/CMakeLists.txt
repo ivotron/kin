@@ -16,6 +16,8 @@ IF (NOT TARGET libversos)
   MESSAGE (FATAL_ERROR "libversos target not found")
 ENDIF ()
 
+# TODO: check for the rest of dependencies: OpenSSL and librados (boost is OK since those are just headers, i.e. we don't use boost::threads or alike)
+
 #------------------------------------------------------------------------------
 # Add gmock/gtest libraries
 #------------------------------------------------------------------------------
@@ -25,7 +27,7 @@ ADD_SUBDIRECTORY (gmock)
 INCLUDE_DIRECTORIES ("gmock/include")
 INCLUDE_DIRECTORIES ("gmock/gtest/include")
 
-SET (DEP_LIBS gtest gtest_main gmock gmock_main)
+SET (DEP_LIBS gtest gtest_main gmock gmock_main ${OPENSSL_LIBRARIES})
 
 IF (ENABLE_MPI_COORDINATOR)
   SET(DEP_LIBS ${DEP_LIBS} ${MPI_LIBRARIES})
