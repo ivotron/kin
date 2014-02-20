@@ -22,12 +22,12 @@ namespace versos
         librados::IoCtx& ctx, const std::string& repositoryName, const std::string& baseName);
     RadosVersionedObject(
         librados::IoCtx& ctx, const std::string& repositoryName, const char* baseName);
-    virtual ~RadosVersionedObject() {};
+    virtual ~RadosVersionedObject();
 
     // inherited
+    int create(const Version& parent, const Version& child);
+    int commit();
     int remove(const Version& v);
-    int create(const Version& v);
-    int snapshot(const Version& parent, const Version& child);
 
     // rados-specific
     int write(const Version& v, librados::bufferlist& bl, size_t len, uint64_t off);
@@ -36,7 +36,6 @@ namespace versos
     int setxattr(const Version& v, const char *name, librados::bufferlist& bl);
   private:
     virtual VersionedObject* do_clone() const;
-    std::string getId(const Version& v) const;
   };
 }
 

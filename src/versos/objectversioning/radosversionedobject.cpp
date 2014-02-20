@@ -1,18 +1,11 @@
 #include "versos/objectversioning/radosversionedobject.h"
 
+#include "versos/version.h"
+
 #include <sstream>
 
 namespace versos
 {
-  /**
-   * Converts 'anything' to string.
-   */
-  template <typename T> static std::string to_str(T anything)
-  {
-    std::ostringstream ss;
-    ss << anything;
-    return ss.str();
-  }
 
   RadosVersionedObject::RadosVersionedObject(
         librados::IoCtx& ctx, const std::string& repositoryName, const std::string& baseName) :
@@ -25,19 +18,48 @@ namespace versos
     VersionedObject("rados", repositoryName, std::string(baseName)), ioctx(ctx)
   {
   }
-
-  std::string RadosVersionedObject::getId(const Version& v) const
+  RadosVersionedObject::~RadosVersionedObject()
   {
-    if (v == Version::NOT_FOUND || v == Version::ERROR)
-      return "";
+  }
 
-    if (!v.contains(*this))
-      // TODO: if this check becomes expensive, we can add an option to trust the user. This means that a user 
-      // won't write to an object in a version and then remove it
-      return "";
+  int RadosVersionedObject::create(const Version& p, const Version& c)
+  {
+    std::string oid;
 
-    // TODO: maintain a cache of generated ids, so that we don't have this concatenation overhead
-    return interfaceName + "_" + repositoryName + "_" + baseName + "_" + to_str(v.getId());
+    oid = getId(p);
+
+    if (oid.empty())
+      return -1;
+
+    oid = getId(c);
+
+    if (oid.empty())
+      return -2;
+
+    // TODO: we currently do nothing else since we assume that the contents of the file are entirely 
+    // overwritten from one version to the other.
+    //
+    // TODO: in order to efficiently address the above, we have to use use rados_clone_range()
+
+    return 0;
+  }
+
+  int RadosVersionedObject::commit()
+  {
+    // TODO: if create() uses rados_clone_range() and snapshots the whole object, we don't need to do anything
+    //
+    // TODO: if write() is using rados_clone_range() instead, we have to fill the holes
+    return 0;
+  }
+
+  int RadosVersionedObject::remove(const Version& v)
+  {
+    std::string oid = getId(v);
+
+    if (oid.empty())
+      return -2;
+
+    return ioctx.remove(oid);
   }
 
   int RadosVersionedObject::write(const Version& v, librados::bufferlist& bl, size_t len, uint64_t off)
@@ -51,16 +73,6 @@ namespace versos
       return -2;
 
     return ioctx.write(oid, bl, len, off);
-  }
-
-  int RadosVersionedObject::snapshot(const Version&, const Version&)
-  {
-    // TODO: we currently do nothing since we assume that the contents of the file are entirely overwritten 
-    // between versions.
-    //
-    // TODO: in order to address the above, we have to use use rados_clone_range()
-
-    return 0;
   }
 
   int RadosVersionedObject::read(const Version& v, librados::bufferlist& bl, size_t len, uint64_t off)
@@ -91,21 +103,6 @@ namespace versos
       return -2;
 
     return ioctx.setxattr(oid, name, bl);
-  }
-
-  int RadosVersionedObject::remove(const Version& v)
-  {
-    std::string oid = getId(v);
-
-    if (oid.empty())
-      return -2;
-
-    return ioctx.remove(oid);
-  }
-
-  int RadosVersionedObject::create(const Version&)
-  {
-    return 0;
   }
 
   VersionedObject* RadosVersionedObject::do_clone() const

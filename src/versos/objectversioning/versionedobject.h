@@ -1,17 +1,20 @@
 #ifndef VERSIONED_OBJECT_H
 #define VERSIONED_OBJECT_H
 
-#include "versos/version.h"
-
-#include <string>
 #include <set>
+#include <sstream>
+#include <string>
 
 #include <boost/noncopyable.hpp>
 
 namespace versos
 {
+  class Version;
+
   /**
    * Versioned object abstraction.
+   *
+   * note: this is not pure virtual so that it can be used in boost::ptr_container's
    */
   class VersionedObject : boost::noncopyable
   {
@@ -22,83 +25,48 @@ namespace versos
 
   public:
     VersionedObject(
-        const std::string& interfaceName, const std::string& repositoryName, const std::string& baseName) :
-      interfaceName(interfaceName), repositoryName(repositoryName), baseName(baseName){}
+        const std::string& interfaceName, const std::string& repositoryName, const std::string& baseName);
 
-    virtual ~VersionedObject() {}
+    virtual ~VersionedObject();
 
+    /**
+     * creates an object based on the given parent. From a high-level point of view, this signals the 
+     * beginning of writes to the given object.
+     */
+    virtual int create(const Version& parent, const Version& child) = 0;
+
+    /**
+     * marks the object as committed. From a high-level point of view, this signals the end of writes to the 
+     * given object. Future attempts to write to the object will fail.
+     */
+    virtual int commit() = 0;
     /**
      * removes the given version of this object.
      */
     virtual int remove(const Version& v) = 0;
 
-    /**
-     * creates an object based on the given parent.
-     */
-    virtual int snapshot(const Version& parent, const Version& child) = 0;
+    const std::string& getInterfaceName() const;
+    const std::string& getBaseName() const;
+    const std::string& getRepositoryName() const;
 
-    const std::string& getInterfaceName() const { return interfaceName; }
-    const std::string& getBaseName() const { return baseName; }
-    const std::string& getRepositoryName() const { return repositoryName; }
-
-    VersionedObject* clone() const { return do_clone(); }
+    VersionedObject* clone() const;
 
   protected:
-    VersionedObject( const VersionedObject& ) { }
+    VersionedObject( const VersionedObject& );
     void operator=( const VersionedObject& );
+
+    std::string getId(const Version& v) const;
+
+    bool isVersionOK(const Version& v) const;
 
   private:
     virtual VersionedObject* do_clone() const = 0;
   };
 
-  VersionedObject* new_clone( const VersionedObject& vo )
-  {
-      return vo.clone();
-  }
+  VersionedObject* new_clone( const VersionedObject& vo );
 
-  inline bool operator==( const VersionedObject& l, const VersionedObject& r )
-  {
-    if (l.getInterfaceName() == r.getInterfaceName() &&
-        l.getRepositoryName() == r.getRepositoryName() &&
-        l.getBaseName() == r.getBaseName())
-      return true;
+  bool operator==( const VersionedObject& l, const VersionedObject& r );
 
-    return false;
-  }
-
-  inline bool operator<( const VersionedObject& l, const VersionedObject& r )
-  {
-    if (l.getInterfaceName() == r.getInterfaceName())
-    {
-      if (l.getRepositoryName() == r.getRepositoryName())
-        return l.getBaseName() < r.getBaseName();
-
-      return l.getRepositoryName() < r.getRepositoryName();
-    }
-    else
-    {
-      return l.getInterfaceName() < r.getInterfaceName();
-    }
-  }
-
-  /*
-   * TODO: add RBD images (which IMO should be called something else, eg. 
-   * stripped blocks, sharded objects, etc)
-
-   class RbdVersionedObject : public VersionedObject
-   {
-   public:
-   RbdVersionedObject(const std::string& id);
-   const std::string& getImage();
-   };
-   */
-
-  /*
-   * ObjDB
-   * {
-   *   obj_handle add(id, baseName);
-   *         void remove(id, baseName);
-   * }
-   */
+  bool operator<( const VersionedObject& l, const VersionedObject& r );
 }
 #endif

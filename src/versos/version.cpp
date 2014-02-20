@@ -1,5 +1,8 @@
 #include "versos/version.h"
 
+#include "versos/coordination/coordinator.h"
+#include "versos/objectversioning/versionedobject.h"
+
 namespace versos
 {
   Version Version::ERROR = Version("1");
@@ -12,7 +15,11 @@ namespace versos
 
   Version::Version(const std::string& id) :
     id(id), parentId(""), status(Version::NONE), coordinator(NULL)
-  {}
+  {
+    if (id == "3")
+      // special case for PARENT_FOR_ROOT
+      status = COMMITTED;
+  }
 
   Version::Version(std::string id, const Version& parent, Coordinator& c) :
     id(id), parentId(parent.getId()), status(STAGED), objects(parent.objects), coordinator(&c)
@@ -31,6 +38,10 @@ namespace versos
   {
   }
 
+  Version::~Version()
+  {
+  }
+
   int Version::add(VersionedObject& o)
   {
     if (status != STAGED)
@@ -39,29 +50,24 @@ namespace versos
     if (contains(o))
       return -2;
 
-    if(coordinator->add(*this, o) < 0)
-      return -3;
-
     objects.insert(o.clone());
+
+    if(coordinator->add(*this, o))
+      return -3;
 
     return 0;
   }
-
-  struct compare {
-    compare(const VersionedObject* ptr) : ptr(ptr) {}
-    bool operator () (const VersionedObject& other) const { return &other == ptr; }
-    const VersionedObject* ptr;
-  };
 
   int Version::remove(VersionedObject& o)
   {
     if (!contains(o))
       return -1;
 
-    if (coordinator->remove(*this, o) < 0)
+    if (coordinator->remove(*this, o))
       return -2;
 
-    objects.erase(std::find_if(objects.begin(), objects.end(), compare(&o)));
+    if (objects.erase(o) != 0)
+      return -3;
 
     return 0;
   }
@@ -71,7 +77,7 @@ namespace versos
     if (status != STAGED)
       return -1;
 
-    if (coordinator->commit(*this) < 0)
+    if (coordinator->commit(*this))
       return -2;
 
     status = COMMITTED;
@@ -91,7 +97,7 @@ namespace versos
 
   bool Version::contains(const VersionedObject& o) const
   {
-    return std::find_if(objects.begin(), objects.end(), compare(&o)) != objects.end();
+    return objects.find(o) != objects.end();
   }
 
   Version::Status Version::getStatus() const
@@ -102,6 +108,11 @@ namespace versos
   const std::string& Version::getId() const
   {
     return id;
+  }
+
+  const boost::ptr_set<VersionedObject>& Version::getObjects() const
+  {
+    return objects;
   }
 
   bool Version::operator== (const Version& other) const

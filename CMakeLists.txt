@@ -28,10 +28,13 @@ INCLUDE_DIRECTORIES ("src/")
 SET(VERSOS_SRC
   "src/versos/version.cpp"
   "src/versos/repository.cpp"
+  "src/versos/refdb/refdb.cpp"
   "src/versos/refdb/memrefdb.cpp"
   "src/versos/coordination/singleclientcoordinator.cpp"
+  "src/versos/objectversioning/versionedobject.cpp"
+  "src/versos/objectversioning/memversionedobject.cpp"
   #"src/versos/coordination/mpicoordinator.cpp"
-  "src/versos/objectversioning/radosversionedobject.cpp"
+  #"src/versos/objectversioning/radosversionedobject.cpp"
 )
 
 ADD_LIBRARY (libversos ${VERSOS_SRC})

@@ -1,9 +1,8 @@
 /**
- * Versos: VERsioned Object Storage.
+ * Versos: VERSioned Object Storage.
  *
- * This library does not perform direct I/O operations into/from the objects 
- * it's managing. It's just a thin layer for grouping objects and handling 
- * version collectively.
+ * This library does not perform direct I/O operations into/from the objects it's managing. It's just a thin 
+ * layer for grouping objects and handling version collectively.
  *
  * High-level view of library:
  *
@@ -99,6 +98,11 @@ namespace versos
     Version& create(const std::string& parentId);
 
     /**
+     * creates a new staged version based on the given parent.
+     */
+    Version& create(const Version& parent);
+
+    /**
      */
     void close();
 
@@ -118,7 +122,7 @@ namespace versos
      * i.e. multiple users/instances can collaborate on the same repo independently and defer coordination to 
      * later.
      *
-     * TODO: of course, we'd like to have branching. In order to do so, we need a @c Reference object to 
+     * TODO: of course, we'd like to have branching too. In order to do so, we need a @c Reference object to 
      * represent tags, branches, etc. This introduces a new element in the metadata hierarchy, so things would 
      * look like:
      *
@@ -130,12 +134,12 @@ namespace versos
      * TODO: differences with Git (more specifically libgit2, although they are in theory equivalent):
      *
      *   - in versos, HASH assignment is done at commit-time, not at index (a.k.a. stage) create-time. Git has
-     *     an index, which is a container of diffs to which adds/removes objects. At commit-time it assigns a 
-     *     hash to it. In versos, we currently identify objects by appending the HASH of the commit to the 
-     *     name of the object, so we create the new hash at "index-creation" time (i.e. when a new @c Version 
-     *     is instantiated). In terms of abstractions though, we have a single @c Version object for both 
-     *     reading committed revisions and modifying uncommitted ones; whereas git has two, commits and index, 
-     *     respectively.
+     *     an index, which is a container of diffs to which stages modifications. At commit-time it assigns a 
+     *     hash to this index. In versos, we currently identify objects by associating the HASH of the staged 
+     *     version to the object, so we need to create the new HASH at "index-creation" time (i.e. when a new 
+     *     @c Version is instantiated). In terms of abstractions, we have a single @c Version object for both 
+     *     reading committed revisions and modifying staged ones; whereas git has two distinct abstraction to 
+     *     do this, namely, commits and index, respectively.
      *
      *   - related to the above, we allow to have multiple staging areas (git's indexes) concurrently, i.e. we
      *     can have multiple @c Version instances and clients can access them concurrently, whereas git (at 

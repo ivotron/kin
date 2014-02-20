@@ -15,21 +15,26 @@ namespace versos
   class RefDB
   {
   private:
-    std::string just;
+    std::string noneOrValid;
+    RefDB(std::string);
+
   public:
     static RefDB NONE;
 
-    virtual ~RefDB() {}
-    virtual int init() {return 0;}
-    virtual const std::string& getHeadId() const {return just;}
-    virtual const Version& checkout(const std::string&) {return Version::ERROR;}
-    virtual Version& create(const Version&, Coordinator&) {return Version::ERROR;}
+    RefDB();
+    virtual ~RefDB();
+    virtual int init();
+    virtual bool isEmpty() const;
+    virtual const std::string& getHeadId() const;
+    virtual const Version& checkout(const std::string&);
+    virtual Version& create(const Version&, Coordinator&);
 
+    virtual int remove(const Version&);
     /**
      * lock a revision. modes = EX or SHARED
      */
-    virtual int lock(const Version&, int ) {return 0;}
-    virtual int commit(const Version&) {return 0;}
+    virtual int lock(const Version&, int );
+    virtual int commit(const Version&);
   };
 
     // log-structured:

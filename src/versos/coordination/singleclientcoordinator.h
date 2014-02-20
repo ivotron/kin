@@ -2,14 +2,15 @@
  * coordinates a single client.
  */
 
+#include "versos/coordination/coordinator.h"
+
 #ifndef SINGLE_CLIENT_COORDINATOR_H
 #define SINGLE_CLIENT_COORDINATOR_H
 
-#include "versos/coordination/coordinator.h"
-#include "versos/refdb/refdb.h"
-
 namespace versos
 {
+  class RefDB;
+
   class SingleClientCoordinator : public Coordinator
   {
   private:
@@ -27,7 +28,8 @@ namespace versos
     int add(const Version& v, VersionedObject& o);
     int remove(const Version& v, VersionedObject& o);
     int commit(const Version& v);
-    int init();
+    int initRepository();
+    bool isRepositoryEmpty();
     Coordinator* clone() const;
   private:
     std::string getMetadataObjectName();

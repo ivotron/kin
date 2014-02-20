@@ -8,17 +8,41 @@ namespace versos
   {
   }
 
+  MemRefDB::~MemRefDB()
+  {
+  }
+
   int MemRefDB::init()
   {
-    headId = "0";
+    boost::shared_ptr<Version> v(new Version(Version::PARENT_FOR_ROOT));
+
+    revisions[Version::PARENT_FOR_ROOT.getId()] = v;
+
+    headId = Version::PARENT_FOR_ROOT.getId();
 
     return 0;
+  }
+
+  bool MemRefDB::isEmpty() const
+  {
+    return revisions.empty();
   }
 
   const std::string& MemRefDB::getHeadId() const
   {
     return headId;
   };
+
+  int MemRefDB::remove(const Version& uncommitted)
+  {
+    if (uncommitted.isCommitted())
+      return -1;
+
+    if (revisions.erase(uncommitted.getId()) != 1)
+      return -2;
+
+    return 0;
+  }
 
   const Version& MemRefDB::checkout(const std::string& id)
   {
@@ -48,6 +72,11 @@ namespace versos
     revisions[v->getId()] = v;
 
     return *v;
+  }
+
+  int MemRefDB::lock(const Version&, int)
+  {
+    return -1;
   }
 
   int MemRefDB::commit(const Version& v)

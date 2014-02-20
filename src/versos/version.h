@@ -5,9 +5,6 @@
 #ifndef VERSION_H
 #define VERSION_H
 
-#include "versos/coordination/coordinator.h"
-#include "versos/objectversioning/versionedobject.h"
-
 #include <string>
 #include <stdint.h>
 #include <set>
@@ -16,6 +13,9 @@
 
 namespace versos
 {
+  class VersionedObject;
+  class Coordinator;
+
   /**
    * interface to a version.
    */

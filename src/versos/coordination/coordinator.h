@@ -7,7 +7,6 @@ namespace versos
 {
   class Version;
   class VersionedObject;
-
   /**
    * coordinates repository-level operations executed by one or more clients.
    *
@@ -16,8 +15,7 @@ namespace versos
   class Coordinator
   {
   public:
-
-    virtual ~Coordinator() = 0;
+    virtual ~Coordinator() {}
 
     /**
      * retrieves latest committed version.
@@ -55,12 +53,17 @@ namespace versos
     /**
      * initializes an empty repo. fails if non-empty.
      */
-    virtual int init() = 0;
+    virtual int initRepository() = 0;
+
+    /**
+     * whether repo is empty.
+     */
+    virtual bool isRepositoryEmpty() = 0;
 
     /**
      * copies this object.
      */
-    virtual Coordinator* clone() const;
+    virtual Coordinator* clone() const = 0;
   };
 }
 

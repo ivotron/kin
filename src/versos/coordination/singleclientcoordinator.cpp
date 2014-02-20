@@ -1,5 +1,7 @@
 #include "versos/coordination/singleclientcoordinator.h"
 
+#include "versos/refdb/refdb.h"
+
 #include <boost/ptr_container/ptr_set.hpp>
 
 namespace versos
@@ -9,6 +11,10 @@ namespace versos
   }
 
   SingleClientCoordinator::SingleClientCoordinator(RefDB& refdb) : refdb(refdb)
+  {
+  }
+
+  SingleClientCoordinator::~SingleClientCoordinator()
   {
   }
 
@@ -48,14 +54,20 @@ namespace versos
     boost::ptr_set<VersionedObject>::iterator it;
 
     for (it = parent.getObjects().begin(); it != parent.getObjects().end(); ++it)
-      it->snapshot(parent, v);
+    {
+      if (it->create(parent, v))
+      {
+        refdb.remove(v);
+        return Version::ERROR;
+      }
+    }
 
     return v;
   }
 
   int SingleClientCoordinator::add(const Version& v, VersionedObject& o)
   {
-    o.snapshot(v, checkout(v.getParentId()));
+    o.create(checkout(v.getParentId()), v);
     return 0;
   }
 
@@ -67,6 +79,7 @@ namespace versos
 
   int SingleClientCoordinator::commit(const Version& v)
   {
+    // TODO: iterate over the objects and call fillSnapshotHoles(parent, child)
     return refdb.commit(v);
   }
 
@@ -75,8 +88,13 @@ namespace versos
     return new SingleClientCoordinator(refdb);
   }
 
-  int SingleClientCoordinator::init()
+  int SingleClientCoordinator::initRepository()
   {
     return refdb.init();
+  }
+
+  bool SingleClientCoordinator::isRepositoryEmpty()
+  {
+    return refdb.isEmpty();
   }
 }
