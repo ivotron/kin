@@ -18,7 +18,12 @@ namespace versos
 
   const Version& Repository::checkout(const std::string& id) const
   {
-    return coordinator->checkout(id);
+    const Version& v = coordinator->checkout(id);
+
+    if (!v.isCommitted())
+      return Version::ERROR;
+
+    return v;
   }
 
   bool Repository::isEmpty() const
@@ -28,6 +33,9 @@ namespace versos
 
   int Repository::init()
   {
+    if (!isEmpty())
+      return -1;
+
     return coordinator->initRepository();
   }
 
@@ -43,6 +51,9 @@ namespace versos
 
   Version& Repository::create(const Version& parent)
   {
+    if (!parent.isOK() || !parent.isCommitted())
+      return Version::ERROR;
+
     return coordinator->create(parent);
   }
 

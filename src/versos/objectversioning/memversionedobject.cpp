@@ -14,11 +14,8 @@ namespace versos
   {
   }
 
-  int MemVersionedObject::create(const Version& p, const Version& c)
+  int MemVersionedObject::create(const Version&, const Version&)
   {
-    if (!isVersionOK(p) || !isVersionOK(c))
-      return -1;
-
     return 0;
   }
 
@@ -29,46 +26,52 @@ namespace versos
 
   int MemVersionedObject::remove(const Version& v)
   {
-    if (!isVersionOK(v))
-      return -1;
+    std::string id;
 
-    if (values.erase(v.getId()) != 1)
-      return -1;
+    int ret = getId(v, id);
+
+    if (ret)
+      return ret;
+
+    if (values.find(id) == values.end())
+      ; // OK, maybe user didn't write to this object in this version,
+        // but this is not our business though, layers above should handle this
+    else if (values.erase(id) != 1)
+      return -41;
+
     return 0;
   }
 
   int MemVersionedObject::write(const Version& v, const std::string& value)
   {
-    if (!isVersionOK(v))
-      return -1;
+    if (v.isCommitted())
+      return -42;
 
-    if (v.getStatus() == Version::COMMITTED)
-      return -2;
+    std::string id;
 
-    std::string oid = getId(v);
+    int ret = getId(v, id);
 
-    if (oid.empty())
-      return -3;
+    if (ret)
+      return ret;
 
-    values[oid] = value;
+    values[id] = value;
 
     return 0;
   }
 
   int MemVersionedObject::read(const Version& v, std::string& value)
   {
-    if (!isVersionOK(v))
-      return -1;
+    std::string id;
 
-    if (values.find(getId(v)) == values.end())
-      return -2;
+    int ret = getId(v, id);
 
-    std::string oid = getId(v);
+    if (ret)
+      return ret;
 
-    if (oid.empty())
-      return -3;
+    if (values.find(id) == values.end())
+      return -43;
 
-    value = values[oid];
+    value = values[id];
 
     return 0;
   }

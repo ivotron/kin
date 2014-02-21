@@ -18,7 +18,9 @@ namespace versos
     std::string msg;
   public:
     SingleClientCoordinator();
+    SingleClientCoordinator(const SingleClientCoordinator& copy);
     SingleClientCoordinator(RefDB& refdb);
+    SingleClientCoordinator(RefDB& refdb, const std::string& msg);
     ~SingleClientCoordinator();
 
     // inherited

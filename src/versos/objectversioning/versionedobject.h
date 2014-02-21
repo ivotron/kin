@@ -15,10 +15,15 @@ namespace versos
   /**
    * Versioned object abstraction.
    *
-   * note: this is not pure virtual so that it can be used in boost::ptr_container's
+   * Since users interact directly with derived-specific methods, the implementation of these should check for 
+   * a version's state (status and special instances) in order to avoid issues. For example, a @c 
+   * FooVersionedObject class implementing a method @c write(Version v, std::string value) should check that 
+   * the given version is valid (e.g. via the @c Version::isOK() method). The provided @c getId(Version) 
+   * actually makes this @c Version::isOK() check.
    */
   class VersionedObject : boost::noncopyable
   {
+    // note: this is not pure virtual so that it can be used in boost::ptr_container's
   protected:
     std::string interfaceName;
     const Repository& repo;
@@ -32,16 +37,26 @@ namespace versos
     /**
      * creates an object based on the given parent. From a high-level point of view, this signals the 
      * beginning of writes to the given object.
+     *
+     * We can safely assume that the versions are safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
+     * etc..), since @c Coordinator should have done this check already.
      */
     virtual int create(const Version& parent, const Version& child) = 0;
 
     /**
      * marks the object as committed. From a high-level point of view, this signals the end of writes to the 
      * given object. Future attempts to write to the object will fail.
+     *
+     * We can safely assume that the version is safe to commit (i.e. it's not a Version::NOT_FOUND, etc..), 
+     * since @c Version has already done this check.
      */
     virtual int commit(const Version& v) = 0;
+
     /**
      * removes the given version of this object.
+     *
+     * We can safely assume that the version is safe to be removed (i.e. it's not a Version::NOT_FOUND, 
+     * etc..), since @c Version has already done this check.
      */
     virtual int remove(const Version& v) = 0;
 
@@ -55,9 +70,7 @@ namespace versos
     VersionedObject( const VersionedObject& );
     void operator=( const VersionedObject& );
 
-    std::string getId(const Version& v) const;
-
-    bool isVersionOK(const Version& v) const;
+    int getId(const Version& v, std::string& id) const;
 
   private:
     virtual VersionedObject* do_clone() const = 0;

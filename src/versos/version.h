@@ -30,10 +30,6 @@ namespace versos
     static Version NOT_FOUND;
     static Version ERROR;
     static Version PARENT_FOR_ROOT;
-    static Version PARENT_NOT_FOUND;
-    static Version PARENT_NOT_RETRIEVED;
-    static Version NOT_COMMITTED;
-    static Version PARENT_NOT_COMMITTED;
 
   private:
     const std::string id;
@@ -89,6 +85,11 @@ namespace versos
 
     bool operator== (const Version& other) const;
     bool operator!= (const Version& other) const;
+
+    /**
+     * returns @c true if the version is not an instance of @c Version::NOT_FOUND or @c Version::ERROR
+     */
+    bool isOK() const;
 
   private:
     Version(const std::string& id);

@@ -8,10 +8,6 @@ namespace versos
   Version Version::ERROR = Version("1");
   Version Version::NOT_FOUND = Version("2");
   Version Version::PARENT_FOR_ROOT = Version("3");
-  Version Version::PARENT_NOT_FOUND = Version("4");
-  Version Version::PARENT_NOT_RETRIEVED = Version("5");
-  Version Version::NOT_COMMITTED = Version("6");
-  Version Version::PARENT_NOT_COMMITTED = Version("7");
 
   Version::Version(const std::string& id) :
     id(id), parentId(""), status(Version::NONE), coordinator(NULL)
@@ -44,41 +40,61 @@ namespace versos
 
   int Version::add(VersionedObject& o)
   {
-    if (status != STAGED)
-      return -1;
+    if (!isOK())
+      return -10;
+
+    if (isCommitted())
+      return -11;
 
     if (contains(o))
-      return -2;
+      return -12;
 
     objects.insert(o.clone());
 
-    if(coordinator->add(*this, o))
-      return -3;
+    int ret = coordinator->add(*this, o);
+
+    if(ret)
+      return ret;
 
     return 0;
   }
 
   int Version::remove(VersionedObject& o)
   {
+    if (!isOK())
+      return -13;
+
+    if (isCommitted())
+      return -14;
+
     if (!contains(o))
-      return -1;
+      return -15;
 
-    if (coordinator->remove(*this, o))
-      return -2;
+    // TODO: check if user has written to the object, in which case we should fail (or not, based on a knob)
 
-    if (objects.erase(o) != 0)
-      return -3;
+    int ret = coordinator->remove(*this, o);
+
+    if (ret)
+      return ret;
+
+    if (objects.erase(o) != 1)
+      return -16;
 
     return 0;
   }
 
   int Version::commit()
   {
-    if (status != STAGED)
-      return -1;
+    if (!isOK())
+      return -17;
 
-    if (coordinator->commit(*this))
-      return -2;
+    if (isCommitted())
+      return -18;
+
+    int ret = coordinator->commit(*this);
+
+    if (ret)
+      return ret;
 
     status = COMMITTED;
 
@@ -93,6 +109,11 @@ namespace versos
   bool Version::isCommitted() const
   {
     return status == COMMITTED;
+  }
+
+  bool Version::isOK() const
+  {
+    return (*this != Version::NOT_FOUND && *this != Version::ERROR);
   }
 
   bool Version::contains(const VersionedObject& o) const

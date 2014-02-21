@@ -10,7 +10,18 @@ namespace versos
   {
   }
 
-  SingleClientCoordinator::SingleClientCoordinator(RefDB& refdb) : refdb(refdb), msg("single")
+  SingleClientCoordinator::SingleClientCoordinator(RefDB& refdb, const std::string& msg) :
+    refdb(*refdb.clone()), msg(msg)
+  {
+  }
+
+  SingleClientCoordinator::SingleClientCoordinator(RefDB& refdb) :
+    refdb(refdb), msg("single")
+  {
+  }
+
+  SingleClientCoordinator::SingleClientCoordinator(const SingleClientCoordinator& copy) :
+    refdb(copy.refdb), msg(copy.msg)
   {
   }
 
@@ -23,29 +34,18 @@ namespace versos
     id = refdb.getHeadId();
 
     if (id.empty())
-      return -1;
+      return -21;
 
     return 0;
   }
 
   const Version& SingleClientCoordinator::checkout(const std::string& id)
   {
-    const Version& v = refdb.checkout(id);
-
-    if (!v.isCommitted())
-      return Version::NOT_COMMITTED;
-
-    return v;
+    return refdb.checkout(id);
   }
 
   Version& SingleClientCoordinator::create(const Version& parent)
   {
-    if (parent == Version::NOT_FOUND || parent == Version::ERROR)
-      return Version::ERROR;
-
-    if (!parent.isCommitted())
-      return Version::PARENT_NOT_COMMITTED;
-
     Version& v = refdb.create(parent, *this, msg);
 
     if (v == Version::ERROR)
@@ -67,18 +67,19 @@ namespace versos
 
   int SingleClientCoordinator::add(const Version& v, VersionedObject& o)
   {
-    o.create(checkout(v.getParentId()), v);
-    return 0;
+    // we add without checking what v's state is since Version is doing all the checks
+    return o.create(checkout(v.getParentId()), v);
   }
 
   int SingleClientCoordinator::remove(const Version& v, VersionedObject& o)
   {
-    o.remove(v);
-    return 0;
+    // we remove without checking what v's state is since Version is doing all the checks
+    return o.remove(v);
   }
 
   int SingleClientCoordinator::commit(const Version& v)
   {
+    // we commit without checking what v's state is since Version is doing all the checks
     boost::ptr_set<VersionedObject>::iterator it;
 
     for (it = v.getObjects().begin(); it != v.getObjects().end(); ++it)

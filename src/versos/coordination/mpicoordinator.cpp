@@ -14,11 +14,23 @@ namespace versos
   }
 
   MpiCoordinator::MpiCoordinator(MPI_Comm comm, int leaderRank, RefDB& refdb, const std::string& msg) :
-    SingleClientCoordinator(refdb), comm(comm), leaderRank(leaderRank)
+    SingleClientCoordinator(refdb, msg), comm(comm), leaderRank(leaderRank)
   {
+    // TODO:
+    //
+    // if (myRank == leaderRank)
+    //   redisdb.init(v)
+    //
+    // // everybody has a memdb as its refdb, only leader has a valid reference to user-provided redisdb
+    // memdb = MemRefDB();
+
     if(MPI_Comm_rank(comm, &myRank))
       throw "Error getting MPI rank";
-    this->msg = msg;
+  }
+
+  MpiCoordinator::MpiCoordinator(const MpiCoordinator& copy) :
+    SingleClientCoordinator(copy.refdb, copy.msg), comm(copy.comm), leaderRank(copy.leaderRank)
+  {
   }
 
   MpiCoordinator::~MpiCoordinator()
@@ -43,11 +55,19 @@ namespace versos
 
   const Version& MpiCoordinator::checkout(const std::string& id)
   {
+    // TODO:
+    // - if memdb returns not_found, we need to contact the leader and ask him to retrieve it from redis
+
     return SingleClientCoordinator::checkout(id);
   }
 
   Version& MpiCoordinator::create(const Version& parent)
   {
+    // TODO:
+    // - we DON'T need to check anything here, since in order to have a valid parent, the user must have 
+    // checked out it previously, thus we handle the issue of not having it at the local memdb in the 
+    // checkout() call above
+
     return SingleClientCoordinator::create(parent);
   }
 
@@ -63,20 +83,31 @@ namespace versos
 
   int MpiCoordinator::commit(const Version& v)
   {
-    if (refdb.commit(v))
-      return -1;
+    // TODO:
+    // - use MPI_Reduceall to synchronizes all ranks' local versions
+    // - then, do:
+    //    if (myRank == leaderRank)
+    //      redisdb.commit(v)
+    // - and then:
+
+    int ret = refdb.commit(v);
+
+    if (ret)
+      return ret;
 
     if (MPI_Barrier(comm))
-      return -2;
+      return -62;
 
     return 0;
   }
 
   int MpiCoordinator::initRepository()
   {
-    return refdb.init();
+    // TODO:
+    // if (myRank == leaderRank)
+    //   redisdb.init(v)
 
-    return 0;
+    return refdb.init();
   }
 
   bool MpiCoordinator::isRepositoryEmpty()

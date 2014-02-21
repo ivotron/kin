@@ -40,11 +40,8 @@ namespace versos
 
   int MemRefDB::remove(const Version& uncommitted)
   {
-    if (uncommitted.isCommitted())
-      return -1;
-
     if (revisions.erase(uncommitted.getId()) != 1)
-      return -2;
+      return -52;
 
     return 0;
   }
@@ -78,14 +75,14 @@ namespace versos
 
   int MemRefDB::lock(const Version&, int)
   {
-    return -1;
+    return -53;
   }
 
   int MemRefDB::commit(const Version& v)
   {
     if (v.getParentId() != getHeadId())
       // HEAD changed since @c v's creation, so committing would break the versioning sequence
-      return -1;
+      return -54;
 
     headId = v.getId();
 

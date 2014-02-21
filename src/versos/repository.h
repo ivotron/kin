@@ -1,42 +1,3 @@
-/**
- * Versos: VERSioned Object Storage.
- *
- * This library does not perform direct I/O operations into/from the objects it's managing. It's just a thin 
- * layer for grouping objects and handling version collectively.
- *
- * High-level view of library:
- *
- *   - repository
- *       - coordinator
- *           - refdb
- *               - revision
- *                   - revision ids
- *                   - contents of each revision
- *                   - object metadata (name, backend, etc.)
- *          - objdb
- *              - snapshot
- *              - remove
- *
- * a repository just calls to the underlying coordinator. The coordinator uses a refdb to store metadata about 
- * revisions and makes sure that the integrity of the refdb is consistent [^consistency_example]. It also 
- * makes use of the @c snapshot()/remove() functionality of the objdb (implemented through the @c 
- * VersionedObject interface) in order to make sure that object snapshots are kept in sync with the metadata.
- *
- * The user primarly interfaces with @c Repository and @c Version classes. The former to @c checkout() 
- * existing revisions and @c create() new ones based on existing ones; the latter to @c add()/remove() objects 
- * to/from versions.
- *
- * In terms of actual I/O, the user operates on objects directly through the @c VersionedObject interface.
- *
- * The main feature of versos is its pluggability. Depending on which implementations (and their 
- * configuration) of the tree main components of the library (@c Coordinator, @c RefDB and @c VersionedObject) 
- * are selected at instantiation-time, the consistency guarantees change.
- *
- * [^consistency_example]: for example, if two users A,B checkout the same HEAD, when A @c commit()'s its 
- * revision, that revision becomes the new HEAD. What happens if user B tries to commit based on the 
- * not-HEAD-anymore revision? The coordinator should ensure that this doesn't happen.
- */
-
 #ifndef REPOSITORY_H
 #define REPOSITORY_H
 
@@ -81,14 +42,15 @@ namespace versos
     int init();
 
     /**
-     * checks out a given version. Returns @c Version::NOT_FOUND if the version 
-     * doesn't exist.
+     * checks out a given version. Returns @c Version::NOT_FOUND if the version doesn't exist.
      */
     const Version& checkout(const std::string& id) const;
 
+    // TODO: checkout() only allows access to committed versions. We can add a retrieve() call that allows to 
+    // get a staged versions
+
     /**
-     * returns the latest committed version. Returns @c Version::NOT_FOUND if no 
-     * version exists in the repository.
+     * returns the latest committed version.
      */
     const Version& checkoutHEAD() const;
 
@@ -133,7 +95,7 @@ namespace versos
      *
      * TODO: differences with Git (more specifically libgit2, although they are in theory equivalent):
      *
-     *   - in versos, HASH assignment is done at commit-time, not at index (a.k.a. stage) create-time. Git has
+     *   - in git, HASH assignment is done at commit-time, not at index (a.k.a. stage) create-time. Git has
      *     an index, which is a container of diffs to which stages modifications. At commit-time it assigns a 
      *     hash to this index. In versos, we currently identify objects by associating the HASH of the staged 
      *     version to the object, so we need to create the new HASH at "index-creation" time (i.e. when a new 
@@ -141,34 +103,43 @@ namespace versos
      *     reading committed revisions and modifying staged ones; whereas git has two distinct abstraction to 
      *     do this, namely, commits and index, respectively.
      *
-     *   - related to the above, we allow to have multiple staging areas (git's indexes) concurrently, i.e. we
+     *   - related to the above, we allow to have multiple staging areas (git's index) concurrently, i.e. we
      *     can have multiple @c Version instances and clients can access them concurrently, whereas git (at 
-     *     least is default c implementation) assumes only one index exists at any point in time. This has the 
-     *     consequence of risking consistency (eg. what if two independent instances update the index at the 
-     *     same time)?
+     *     least is default c implementation) assumes only one index exists at any point in time.
      *
      *   - git doesn't coordinate access to the refdb. Multiple instances may leave the refdb in an
      *     inconsistent state. We provide distinct degrees of consistency by providing different ways of 
      *     combining <Coordinator,RefDB,VersionedObject> triplets.
      *
-     *   - git rewrites trees (git's internal object metadata hierarchy) for every commit (assuming a POSIX
-     *     bacckend). It should be able to do better by snapshotting, eg. in ZFS/XFS, but it seems it 
-     *     currently doesn't. It's not clear if this is a design issue (whether it's internal interfaces 
-     *     assume POSIX-like backend) or if it's just an implementation issue. In either case, we assume 
-     *     snapshotting as a first-class citizen in the @c VersionedObject interface, so we take advantage of 
-     *     backends that can provide efficient ways of doing this.
+     *   - git rewrites the entire tree (git's internal object metadata hierarchy) associated to a revision
+     *     every time it commits. It should be able to do better by snapshotting, e.g. using ZFS/XFS 
+     *     capabilities, but it seems it currently doesn't. It's not clear if this is a design issue (whether 
+     *     it's internal interfaces assume a POSIX-like backend) or if it's just an implementation issue. In 
+     *     either case, we assume snapshotting as a first-class citizen in the @c VersionedObject interface, 
+     *     so we take advantage of backends that can provide efficient ways of doing this.
      *
-     * TODO: mpi coordinator doesn't pass to leader the objects that it adds/removes to a transaction. The 
-     * assumption is that there's a way to check this on the backend.
+     * TODO: on a more C++-specific note: throughout the library, we don't take ownership of passed pointers. 
+     * Instead, we just make copies of @c Coordinator, @c RefDB and @c VersionedObject instances passed by the 
+     * user. In this way, the user doesn't have to worry about memory management. This works because the user 
+     * isn't sharing anything to the library (and viceversa) via these classes. He/she interacts with the 
+     * library via the @c Repository and @c Version classes; instances of the former are owned by the user; of 
+     * latter are owned by the library (actually, the user doesn't need to instantiate @c Version objects; we 
+     * could actually hide the constructor). In order to completely solve this, we should have factories so 
+     * that the user just passes an versos::Repository::Options object containing what s/he wants and the 
+     * repository class should construct the objects accordingly.
      *
-     * TODO: an optimization for mpi coordinator: use two refDB instances, the leader uses the one given by 
-     * the user (eg. redisrefdb) while every other rank uses a memrefdb that serves as a cache. Since ranks 
-     * operate in a tightly-coupled manner, we only need to "bootstrap" the local memrefdb so that any other 
-     * rank's local memrefdb contains the "same" data in terms of committed versions, but can differ on the 
-     * current iteration's contents. Then, at every commit, the local memrefdb synchronizes with the one held 
-     * by the leader's and then the leaders sync's its memrefdb with the backend (eg. redisrefdb). 
-     * Alternatively, we can just make every rank talk to the leader every time an object is added/removed. Or 
-     * we could just cache add/remove's and have every other operation talk to the leader.
+     * TODO: we can allow to automatically add objects to a version when they get written to.
+     *
+     *
+     * error codes ranges:
+     *    0-9  : repo
+     *   10-19 : version
+     *   20-29 : singleclient
+     *   30-39 : radosobj
+     *   40-49 : memobj
+     *   50-59 : memrefdb
+     *   60-69 : mpicoord
+     *   70-79 : versionedobject
      */
   };
 }

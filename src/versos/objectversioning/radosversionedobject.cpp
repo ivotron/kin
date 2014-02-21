@@ -22,13 +22,10 @@ namespace versos
   {
   }
 
-  int RadosVersionedObject::create(const Version& p, const Version& c)
+  int RadosVersionedObject::create(const Version&, const Version&)
   {
-    if (!isVersionOK(p) || !isVersionOK(c))
-      return -1;
-
-    // TODO: we currently do nothing else since we assume that the contents of the file are entirely 
-    // overwritten from one version to the other.
+    // TODO: we currently do nothing since we assume that the contents of the file are entirely overwritten 
+    // from one version to the other.
     //
     // TODO: in order to efficiently address the above, we have to use use rados_clone_range()
 
@@ -45,30 +42,102 @@ namespace versos
 
   int RadosVersionedObject::remove(const Version& v)
   {
-    return ioctx.remove(getId(v));
+    if (v.isCommitted())
+      return -31;
+
+    std::string id;
+
+    int ret = getId(v, id);
+
+    if (ret)
+      return ret;
+
+    ret = ioctx.remove(id);
+
+    if (ret)
+      return -32;
+
+    return 0;
   }
 
   int RadosVersionedObject::write(const Version& v, librados::bufferlist& bl, size_t len, uint64_t off)
   {
-    if (v.getStatus() == Version::COMMITTED)
-      return -1;
+    if (v.isCommitted())
+      return -33;
 
-    return ioctx.write(getId(v), bl, len, off);
+    std::string id;
+
+    int ret = getId(v, id);
+
+    if (ret)
+      return ret;
+
+    ret = ioctx.write(id, bl, len, off);
+
+    if (ret < 0)
+      return -34;
+
+    return ret;
   }
 
   int RadosVersionedObject::read(const Version& v, librados::bufferlist& bl, size_t len, uint64_t off)
   {
-    return ioctx.read(getId(v), bl, len, off);
+    if (v.isCommitted())
+      return -35;
+
+    std::string id;
+
+    int ret = getId(v, id);
+
+    if (ret)
+      return ret;
+
+    ret = ioctx.read(id, bl, len, off);
+
+    if (ret < 0)
+      return -36;
+
+    return ret;
   }
 
   int RadosVersionedObject::stat(const Version& v, uint64_t *psize, time_t *pmtime)
   {
-    return ioctx.stat(getId(v), psize, pmtime);
+    if (v.isCommitted())
+      return -37;
+
+    std::string id;
+
+    int ret = getId(v, id);
+
+    if (ret)
+      return ret;
+
+    ret = ioctx.stat(id, psize, pmtime);
+
+    if (ret)
+      return -38;
+
+    return 0;
   }
 
   int RadosVersionedObject::setxattr(const Version& v, const char *name, librados::bufferlist& bl)
   {
-    return ioctx.setxattr(getId(v), name, bl);
+    if (v.isCommitted())
+      return -39;
+
+    std::string id;
+
+    int ret = getId(v, id);
+
+    if (ret)
+      return ret;
+
+    ret = ioctx.setxattr(id, name, bl);
+
+    if (ret < 0)
+      return -30;
+
+    return 0;
   }
 
   VersionedObject* RadosVersionedObject::do_clone() const

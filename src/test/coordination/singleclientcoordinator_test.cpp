@@ -22,32 +22,55 @@ TEST(singlecoordinator, basic_commit_of_root)
   ASSERT_EQ(head.getObjects().size(), 0u);
   ASSERT_EQ(head.getId(), versos::Version::PARENT_FOR_ROOT.getId());
 
-  ASSERT_NE(head, versos::Version::ERROR);
-  ASSERT_NE(head, versos::Version::NOT_FOUND);
+  ASSERT_TRUE(head.isOK());
 
-  versos::Version& newVersion = repo.create(head);
+  versos::Version& v1 = repo.create(head);
 
-  ASSERT_NE(newVersion, versos::Version::ERROR);
-  ASSERT_NE(newVersion, versos::Version::NOT_FOUND);
-  ASSERT_TRUE(!newVersion.isCommitted());
-  ASSERT_EQ(newVersion.getStatus(), versos::Version::STAGED);
-  ASSERT_EQ(newVersion.getObjects().size(), 0u);
-  ASSERT_NE(newVersion.getId(), versos::Version::PARENT_FOR_ROOT.getId());
+  ASSERT_TRUE(v1.isOK());
+  ASSERT_TRUE(!v1.isCommitted());
+  ASSERT_EQ(v1.getStatus(), versos::Version::STAGED);
+  ASSERT_EQ(v1.getObjects().size(), 0u);
+  ASSERT_NE(v1.getId(), versos::Version::PARENT_FOR_ROOT.getId());
 
-  versos::MemVersionedObject o1(repo.getName(), "o1");
+  versos::MemVersionedObject o1(repo, "o1");
 
-  ASSERT_EQ(0, newVersion.add(o1));
+  ASSERT_EQ(0, v1.add(o1));
 
-  ASSERT_TRUE(!newVersion.isCommitted());
-  ASSERT_EQ(newVersion.getStatus(), versos::Version::STAGED);
-  ASSERT_EQ(newVersion.getObjects().size(), 1u);
-  ASSERT_TRUE(newVersion.contains(o1));
+  ASSERT_TRUE(!v1.isCommitted());
+  ASSERT_EQ(v1.getStatus(), versos::Version::STAGED);
+  ASSERT_EQ(v1.getObjects().size(), 1u);
+  ASSERT_TRUE(v1.contains(o1));
 
-  ASSERT_EQ(0, newVersion.commit());
+  ASSERT_EQ(0, v1.commit());
 
-  ASSERT_TRUE(newVersion.isCommitted());
-  ASSERT_EQ(newVersion.getStatus(), versos::Version::COMMITTED);
-  ASSERT_EQ(newVersion.getObjects().size(), 1u);
+  ASSERT_TRUE(v1.isCommitted());
+  ASSERT_EQ(v1.getStatus(), versos::Version::COMMITTED);
+  ASSERT_EQ(v1.getObjects().size(), 1u);
+
+  versos::Version& v2 = repo.create(v1);
+
+  ASSERT_NE(v1, v2);
+  ASSERT_TRUE(v2.isOK());
+  ASSERT_TRUE(!v2.isCommitted());
+  ASSERT_EQ(v2.getStatus(), versos::Version::STAGED);
+  ASSERT_EQ(v2.getObjects().size(), 1u);
+  ASSERT_TRUE(v2.contains(o1));
+
+  ASSERT_EQ(v2.remove(o1), 0);
+
+  ASSERT_TRUE(!v2.isCommitted());
+  ASSERT_EQ(v2.getObjects().size(), 0u);
+  ASSERT_TRUE(!v2.contains(o1));
+
+  ASSERT_EQ(v2.commit(), 0);
+
+  ASSERT_TRUE(v2.isCommitted());
+  ASSERT_EQ(v2.getStatus(), versos::Version::COMMITTED);
+  ASSERT_EQ(v2.getObjects().size(), 0u);
+  ASSERT_TRUE(!v2.contains(o1));
+
+  ASSERT_TRUE(!head.contains(o1));
+  ASSERT_TRUE(v1.contains(o1));
 }
 
 TEST(singlecoordinator, values_between_versions)
@@ -63,7 +86,7 @@ TEST(singlecoordinator, values_between_versions)
   const versos::Version& head = repo.checkoutHEAD();
   versos::Version& v1 = repo.create(head);
 
-  versos::MemVersionedObject o1(repo.getName(), "o1");
+  versos::MemVersionedObject o1(repo, "o1");
 
   ASSERT_EQ(0, v1.add(o1));
 
@@ -72,9 +95,6 @@ TEST(singlecoordinator, values_between_versions)
   ASSERT_EQ(0, v1.commit());
 
   versos::Version& v2 = repo.create(v1);
-
-  ASSERT_NE(v2, versos::Version::ERROR);
-  ASSERT_NE(v2, versos::Version::NOT_FOUND);
 
   ASSERT_NE(v1, v2);
 

@@ -25,24 +25,21 @@ namespace versos
   {
   }
 
-  std::string VersionedObject::getId(const Version& v) const
+  int VersionedObject::getId(const Version& v, std::string& id) const
   {
-    if (!isVersionOK(v))
-      return "";
+    if (!v.isOK())
+      return -70;
 
     if (!v.contains(*this))
       // TODO: if this check becomes expensive, we can add an option to trust the user. This means that a user 
       // won't operate inconsistently in terms of intra-transaction object metadata operations, eg. remove an 
       // object and then read/write to it
-      return "";
+      return -71;
 
     // TODO: maintain a cache of generated ids, so that we don't have this concatenation overhead
-    return interfaceName + "_" + repo.getName() + "_" + baseName + "_" + to_str(v.getId());
-  }
+    id = interfaceName + "_" + repo.getName() + "_" + baseName + "_" + to_str(v.getId());
 
-  bool VersionedObject::isVersionOK(const Version& v) const
-  {
-    return (v != Version::ERROR && v != Version::NOT_FOUND);
+    return 0;
   }
 
   const std::string& VersionedObject::getInterfaceName() const
