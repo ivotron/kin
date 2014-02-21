@@ -18,10 +18,8 @@ namespace versos
     librados::IoCtx& ioctx;
 
   public:
-    RadosVersionedObject(
-        librados::IoCtx& ctx, const std::string& repositoryName, const std::string& baseName);
-    RadosVersionedObject(
-        librados::IoCtx& ctx, const std::string& repositoryName, const char* baseName);
+    RadosVersionedObject(librados::IoCtx& ctx, const Repository& repo, const std::string& baseName);
+    RadosVersionedObject(librados::IoCtx& ctx, const Repository& repo, const char* baseName);
     virtual ~RadosVersionedObject();
 
     // inherited
@@ -38,6 +36,4 @@ namespace versos
     virtual VersionedObject* do_clone() const;
   };
 }
-
 #endif
-

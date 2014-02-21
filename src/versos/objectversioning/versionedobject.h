@@ -10,6 +10,7 @@
 namespace versos
 {
   class Version;
+  class Repository;
 
   /**
    * Versioned object abstraction.
@@ -20,12 +21,11 @@ namespace versos
   {
   protected:
     std::string interfaceName;
-    std::string repositoryName;
+    const Repository& repo;
     std::string baseName;
 
   public:
-    VersionedObject(
-        const std::string& interfaceName, const std::string& repositoryName, const std::string& baseName);
+    VersionedObject(const std::string& interfaceName, const Repository& repo, const std::string& baseName);
 
     virtual ~VersionedObject();
 

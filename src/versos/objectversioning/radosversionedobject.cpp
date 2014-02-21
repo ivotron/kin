@@ -8,14 +8,14 @@ namespace versos
 {
 
   RadosVersionedObject::RadosVersionedObject(
-        librados::IoCtx& ctx, const std::string& repositoryName, const std::string& baseName) :
-    VersionedObject("rados", repositoryName, baseName), ioctx(ctx)
+        librados::IoCtx& ctx, const Repository& repo, const std::string& baseName) :
+    VersionedObject("rados", repo, baseName), ioctx(ctx)
   {
   }
 
   RadosVersionedObject::RadosVersionedObject(
-        librados::IoCtx& ctx, const std::string& repositoryName, const char* baseName) :
-    VersionedObject("rados", repositoryName, std::string(baseName)), ioctx(ctx)
+        librados::IoCtx& ctx, const Repository& repo, const char* baseName) :
+    VersionedObject("rados", repo, std::string(baseName)), ioctx(ctx)
   {
   }
   RadosVersionedObject::~RadosVersionedObject()
@@ -24,17 +24,8 @@ namespace versos
 
   int RadosVersionedObject::create(const Version& p, const Version& c)
   {
-    std::string oid;
-
-    oid = getId(p);
-
-    if (oid.empty())
+    if (!isVersionOK(p) || !isVersionOK(c))
       return -1;
-
-    oid = getId(c);
-
-    if (oid.empty())
-      return -2;
 
     // TODO: we currently do nothing else since we assume that the contents of the file are entirely 
     // overwritten from one version to the other.
@@ -54,12 +45,7 @@ namespace versos
 
   int RadosVersionedObject::remove(const Version& v)
   {
-    std::string oid = getId(v);
-
-    if (oid.empty())
-      return -2;
-
-    return ioctx.remove(oid);
+    return ioctx.remove(getId(v));
   }
 
   int RadosVersionedObject::write(const Version& v, librados::bufferlist& bl, size_t len, uint64_t off)
@@ -67,46 +53,26 @@ namespace versos
     if (v.getStatus() == Version::COMMITTED)
       return -1;
 
-    std::string oid = getId(v);
-
-    if (oid.empty())
-      return -2;
-
-    return ioctx.write(oid, bl, len, off);
+    return ioctx.write(getId(v), bl, len, off);
   }
 
   int RadosVersionedObject::read(const Version& v, librados::bufferlist& bl, size_t len, uint64_t off)
   {
-    std::string oid = getId(v);
-
-    if (oid.empty())
-      return -2;
-
-    return ioctx.read(oid, bl, len, off);
+    return ioctx.read(getId(v), bl, len, off);
   }
 
   int RadosVersionedObject::stat(const Version& v, uint64_t *psize, time_t *pmtime)
   {
-    std::string oid = getId(v);
-
-    if (oid.empty())
-      return -2;
-
-    return ioctx.stat(oid, psize, pmtime);
+    return ioctx.stat(getId(v), psize, pmtime);
   }
 
   int RadosVersionedObject::setxattr(const Version& v, const char *name, librados::bufferlist& bl)
   {
-    std::string oid = getId(v);
-
-    if (oid.empty())
-      return -2;
-
-    return ioctx.setxattr(oid, name, bl);
+    return ioctx.setxattr(getId(v), name, bl);
   }
 
   VersionedObject* RadosVersionedObject::do_clone() const
   {
-    return new RadosVersionedObject(ioctx, repositoryName, baseName);
+    return new RadosVersionedObject(ioctx, repo, baseName);
   }
 }

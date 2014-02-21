@@ -1,11 +1,12 @@
 #include "versos/objectversioning/memversionedobject.h"
 
 #include "versos/version.h"
+#include "versos/repository.h"
 
 namespace versos
 {
-  MemVersionedObject::MemVersionedObject(const std::string& repositoryName, const std::string& baseName)
-    : VersionedObject("in-mem", repositoryName, baseName)
+  MemVersionedObject::MemVersionedObject(const Repository& repo, const std::string& baseName)
+    : VersionedObject("in-mem", repo, baseName)
   {
   }
 
@@ -74,6 +75,6 @@ namespace versos
 
   VersionedObject* MemVersionedObject::do_clone() const
   {
-    return new MemVersionedObject(repositoryName, baseName);
+    return new MemVersionedObject(repo, baseName);
   }
 }

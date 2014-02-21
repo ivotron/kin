@@ -1,6 +1,7 @@
 #include "versos/objectversioning/versionedobject.h"
 
 #include "versos/version.h"
+#include "versos/repository.h"
 
 namespace versos
 {
@@ -15,16 +16,12 @@ namespace versos
   }
 
   VersionedObject::VersionedObject(
-      const std::string& interfaceName, const std::string& repositoryName, const std::string& baseName) :
-    interfaceName(interfaceName), repositoryName(repositoryName), baseName(baseName)
+      const std::string& interfaceName, const Repository& repo, const std::string& baseName) :
+    interfaceName(interfaceName), repo(repo), baseName(baseName)
   {
   }
 
   VersionedObject::~VersionedObject()
-  {
-  }
-
-  VersionedObject::VersionedObject( const VersionedObject& )
   {
   }
 
@@ -40,7 +37,7 @@ namespace versos
       return "";
 
     // TODO: maintain a cache of generated ids, so that we don't have this concatenation overhead
-    return interfaceName + "_" + repositoryName + "_" + baseName + "_" + to_str(v.getId());
+    return interfaceName + "_" + repo.getName() + "_" + baseName + "_" + to_str(v.getId());
   }
 
   bool VersionedObject::isVersionOK(const Version& v) const
@@ -58,7 +55,7 @@ namespace versos
   }
   const std::string& VersionedObject::getRepositoryName() const
   {
-    return repositoryName;
+    return repo.getName();
   }
 
   VersionedObject* VersionedObject::clone() const

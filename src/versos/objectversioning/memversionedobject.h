@@ -17,7 +17,7 @@ namespace versos
   private:
     std::map<std::string, std::string> values;
   public:
-    MemVersionedObject(const std::string& repositoryName, const std::string& baseName);
+    MemVersionedObject(const Repository& repo, const std::string& baseName);
 
     virtual ~MemVersionedObject();
 
