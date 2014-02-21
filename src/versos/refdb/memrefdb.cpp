@@ -12,6 +12,11 @@ namespace versos
   {
   }
 
+  RefDB* MemRefDB::clone()
+  {
+    return new MemRefDB();
+  }
+
   int MemRefDB::init()
   {
     boost::shared_ptr<Version> v(new Version(Version::PARENT_FOR_ROOT));

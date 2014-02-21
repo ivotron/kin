@@ -26,4 +26,6 @@ namespace versos
    */
   int RefDB::lock(const Version&, int ) {return 0;}
   int RefDB::commit(const Version&) {return 0;}
+
+  RefDB* RefDB::clone() {return new RefDB(noneOrValid);}
 }

@@ -27,6 +27,7 @@ namespace versos
     int remove(const Version& uncommitted);
     int lock(const Version&, int);
     int commit(const Version&);
+    RefDB* clone();
   };
 
 }

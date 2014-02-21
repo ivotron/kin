@@ -35,6 +35,7 @@ namespace versos
      */
     virtual int lock(const Version&, int );
     virtual int commit(const Version&);
+    virtual RefDB* clone();
   };
 
     // log-structured:
