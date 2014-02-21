@@ -38,10 +38,10 @@ SET(VERSOS_SRC
   "src/versos/coordination/mpicoordinator.cpp"
   "src/versos/objectversioning/versionedobject.cpp"
   "src/versos/objectversioning/memversionedobject.cpp"
-  #"src/versos/objectversioning/radosversionedobject.cpp"
+  "src/versos/objectversioning/radosversionedobject.cpp"
 )
 
-ADD_LIBRARY (libversos ${VERSOS_SRC})
+ADD_LIBRARY (versos ${VERSOS_SRC})
 
 OPTION (ENABLE_TESTS "Build all tests." OFF)
 

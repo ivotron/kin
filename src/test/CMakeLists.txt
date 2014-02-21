@@ -12,11 +12,13 @@ IF (ENABLE_MPI_COORDINATOR)
   ENDIF ()
 ENDIF()
 
-IF (NOT TARGET libversos)
-  MESSAGE (FATAL_ERROR "libversos target not found")
+IF (!OPENSSL_FOUND)
+  MESSAGE (FATAL_ERROR "OpenSSL required")
 ENDIF ()
 
-# TODO: check for the rest of dependencies: OpenSSL and librados (boost is OK since those are just headers, i.e. we don't use boost::threads or alike)
+IF (NOT TARGET versos)
+  MESSAGE (FATAL_ERROR "versos target not found")
+ENDIF ()
 
 #------------------------------------------------------------------------------
 # Add gmock/gtest libraries
@@ -37,29 +39,34 @@ ENDIF()
 # Set up test macros
 #------------------------------------------------------------------------------
 
-MACRO (BUILD_TEST test_name filename)
-  ADD_EXECUTABLE (${test_name} ${CMAKE_CURRENT_SOURCE_DIR}/${filename})
-  TARGET_LINK_LIBRARIES (${test_name} libversos ${DEP_LIBS})
+MACRO (BUILD_TEST bin_name src_name)
+  ADD_EXECUTABLE (${bin_name} ${CMAKE_CURRENT_SOURCE_DIR}/${src_name})
+  TARGET_LINK_LIBRARIES (${bin_name} versos ${DEP_LIBS})
 ENDMACRO ()
 
-MACRO (BUILD_AND_ADD_TEST test_name filename)
-  BUILD_TEST(${test_name} ${filename})
-  ADD_TEST(${test_name} ${test_name})
+MACRO (BUILD_AND_ADD_TEST bin_name src_name)
+  BUILD_TEST(${bin_name} ${src_name})
+  ADD_TEST(${bin_name} ${bin_name})
 ENDMACRO()
 
 IF (ENABLE_MPI_COORDINATOR)
-  MACRO (ADD_MPI_TEST filename np)
-    FOREACH(F ${ARGV})
-      IF ((NOT (MPIEXEC_MAX_NUMPROCS LESS F)) AND (NOT (${F} STREQUAL ${filename})))
-        ADD_TEST (NAME ${filename}_${F} COMMAND ${MPIEXEC} ${MPIEXEC_PREFLAGS}
-          ${MPIEXEC_NUMPROC_FLAG} ${F} ${MPIEXEC_POSTFLAGS} $<TARGET_FILE:${filename}>)
-      ENDIF ()
-    ENDFOREACH ()
+
+  MACRO (ADD_MPI_TEST test_name np)
+    ADD_TEST (NAME ${test_name}_${np} COMMAND ${MPIEXEC} ${MPIEXEC_PREFLAGS}
+          ${MPIEXEC_NUMPROC_FLAG} ${np} ${MPIEXEC_POSTFLAGS} $<TARGET_FILE:${test_name}>)
   ENDMACRO ()
-  MACRO (BUILD_AND_ADD_MPI_TEST test_name filename np)
-    BUILD_TEST(${test_name} ${filename})
-    ADD_MPI_TEST(${test_name} ${np})
+
+  MACRO (BUILD_AND_ADD_MPI_TEST bin_name src_name np_vararg)
+    BUILD_TEST(${bin_name} ${src_name})
+    FOREACH(F ${ARGV})
+      IF (NOT(${F} STREQUAL ${bin_name}) AND
+          NOT(${F} STREQUAL ${src_name}) AND
+          NOT(MPIEXEC_MAX_NUMPROCS LESS F))
+        ADD_MPI_TEST(${bin_name} ${F})
+      ENDIF()
+    ENDFOREACH ()
   ENDMACRO()
+
 ENDIF()
 
 #------------------------------------------------------------------------------
@@ -69,5 +76,5 @@ ENDIF()
 BUILD_AND_ADD_TEST (singleclientcoordinator_test "coordination/singleclientcoordinator_test.cpp")
 
 IF (ENABLE_MPI_COORDINATOR)
-  BUILD_AND_ADD_MPI_TEST(mpicoordinator "coordination/mpicoordinator_test.cpp" 2 4 8 16)
+  BUILD_AND_ADD_MPI_TEST(mpicoordinator_test "coordination/mpicoordinator_test.cpp" 2 4 8 16)
 ENDIF()
