@@ -10,8 +10,25 @@
 
 namespace versos
 {
-  MpiCoordinator::MpiCoordinator(MPI_Comm comm, int leaderRank, RefDB& refdb, const std::string& msg) :
-    SingleClientCoordinator(refdb, msg), comm(comm), leaderRank(leaderRank)
+  MpiCoordinator::MpiCoordinator(RefDB& refdb, const Options& o) :
+    SingleClientCoordinator(refdb, o.hash_seed), comm(o.mpi_comm), leaderRank(o.mpi_leader_rank), 
+    syncMode(o.sync_mode)
+  {
+    init();
+  }
+
+  MpiCoordinator::MpiCoordinator(
+      MPI_Comm comm,
+      int leaderRank,
+      Options::ClientSync::Mode syncMode,
+      RefDB& refdb,
+      const std::string& msg) :
+    SingleClientCoordinator(refdb, msg), comm(comm), leaderRank(leaderRank), syncMode(syncMode)
+  {
+    init();
+  }
+
+  void MpiCoordinator::init()
   {
     // TODO:
     //
@@ -20,8 +37,10 @@ namespace versos
     //
     // // everybody has a memdb as its refdb, only leader has a valid reference to user-provided redisdb
     // memdb = MemRefDB();
+    if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
+      throw std::runtime_error("Not supported yet");
 
-    if (comm == MPI_COMM_NULL)
+    if (comm == MPI_COMM_NULL || comm == -1)
       throw std::runtime_error("MPI comm is NULL");
 
     int size;

@@ -3,11 +3,14 @@
 
 #include "versos/coordination/singleclientcoordinator.h"
 
+#include "versos/options.h"
+
 #include <mpi.h>
 
 namespace versos
 {
   class RefDB;
+
   /**
    * coordinates clients that operate concurrently on a repository. MPI coordination has a leader rank that 
    * acts like a @c SingleClientCoordinator and broadcasts/gathers the info to/from all the other ranks
@@ -30,8 +33,17 @@ namespace versos
     MPI_Comm comm;
     int leaderRank;
     int myRank;
+    Options::ClientSync::Mode syncMode;
   public:
-    MpiCoordinator(MPI_Comm comm, int leaderRank, RefDB& refdb, const std::string& msg);
+    MpiCoordinator(RefDB& refdb, const Options& o);
+
+    MpiCoordinator(
+        MPI_Comm comm,
+        int leaderRank,
+        Options::ClientSync::Mode syncMode,
+        RefDB& refdb,
+        const std::string& hashSeed);
+
     ~MpiCoordinator();
 
     // inherited
@@ -44,6 +56,8 @@ namespace versos
     int initRepository();
     bool isRepositoryEmpty();
     int shutdown();
+  private:
+    void init();
   };
 }
 #endif

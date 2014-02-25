@@ -2,10 +2,9 @@
 #define REPOSITORY_H
 
 #include "versos/version.h"
+#include "versos/options.h"
 
 #include <string>
-#include <map>
-#include <set>
 
 // TODO: ifdef WITH_MPI_COORDINATOR
 #include <mpi.h>
@@ -15,57 +14,7 @@ namespace versos
 {
   class Coordinator;
   class RefDB;
-
-  /**
-   * Options to control the behavior of a repository (passed to @c Repository constructor)
-   */
-  struct Options
-  {
-    /**
-     * name of coordinator class. Current alternatives:
-     *
-     *   - @c single
-     *   - @c mpi
-     *   - @c backend
-     */
-    std::string coordinator;
-
-    /**
-     * name of metadata database class. Current alternatives:
-     *
-     *   - @c mem
-     *   - @c rados
-     *   - @c redis
-     */
-    std::string metadb;
-
-    /**
-     * whether to initialize db if empty. Default: false.
-     */
-    bool metadb_initialize_if_empty;
-
-    /**
-     * what to use to seed the internal hashing algorithm.
-     */
-    std::string hash_seed;
-
-// TODO: ifdef (ENABLE_MPI_COORDINATOR)
-    /** options for mpi coordination. @see MpiCoordinator */
-    int mpi_leader_rank;
-    MPI_Comm mpi_comm;
-// TODO: endif
-
-    Options()
-    {
-      hash_seed = "default seed";
-      metadb_initialize_if_empty = false;
-
-// TODO: ifdef (ENABLE_MPI_COORDINATOR)
-      mpi_leader_rank = -1;
-      mpi_comm = MPI_COMM_NULL;
-// TODO: endif
-    }
-  };
+  class VersionedObject;
 
   /**
    * The main interface for checking-out/creating versions.
@@ -78,8 +27,6 @@ namespace versos
     RefDB* refdb;
 
   public:
-    static Repository NONE;
-
     /**
      * creates a new versioning context for the given repository name.
      */

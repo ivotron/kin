@@ -6,8 +6,8 @@ TEST(memrefdb_test, fail_if_not_initialized)
 {
   versos::Options o;
 
-  o.metadb = "mem";
-  o.coordinator = "single";
+  o.metadb_type = versos::Options::MetaDB::MEM;
+  o.coordinator_type = versos::Options::Coordinator::SINGLE_CLIENT;
 
   versos::Repository repo("mydataset", o);
   const versos::Version& head = repo.checkoutHEAD();

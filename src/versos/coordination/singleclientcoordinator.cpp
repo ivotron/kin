@@ -8,18 +8,23 @@
 
 namespace versos
 {
-  SingleClientCoordinator::SingleClientCoordinator(RefDB& refdb, const std::string& msg) :
-    refdb(refdb), msg(msg)
+  SingleClientCoordinator::SingleClientCoordinator(RefDB& refdb, const Options& o) :
+    refdb(refdb), hashSeed(o.hash_seed)
+  {
+  }
+
+  SingleClientCoordinator::SingleClientCoordinator(RefDB& refdb, const std::string& hashSeed) :
+    refdb(refdb), hashSeed(hashSeed)
   {
   }
 
   SingleClientCoordinator::SingleClientCoordinator(RefDB& refdb) :
-    refdb(refdb), msg("single")
+    refdb(refdb), hashSeed("single")
   {
   }
 
   SingleClientCoordinator::SingleClientCoordinator(const SingleClientCoordinator& copy) :
-    refdb(copy.refdb), msg(copy.msg)
+    refdb(copy.refdb), hashSeed(copy.hashSeed)
   {
   }
 
@@ -41,7 +46,7 @@ namespace versos
 
   Version& SingleClientCoordinator::create(const Version& parent)
   {
-    Version& v = refdb.create(parent, msg);
+    Version& v = refdb.create(parent, hashSeed);
 
     if (v == Version::ERROR)
       return v;

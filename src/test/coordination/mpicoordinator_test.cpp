@@ -1,6 +1,4 @@
 #include "versos/repository.h"
-#include "versos/refdb/memrefdb.h"
-#include "versos/coordination/mpicoordinator.h"
 #include "versos/objectversioning/memversionedobject.h"
 #include "versos/utils.h"
 
@@ -14,13 +12,15 @@ TEST(mpicoordinator_test, factory)
 {
   versos::Options o;
 
-  o.metadb = "mem";
-  o.coordinator = "mpi";
+  o.coordinator_type = versos::Options::Coordinator::MPI;
 
   ASSERT_ANY_THROW(versos::Repository repo("mydataset", o));
 
-  o.mpi_leader_rank = -1;
   o.mpi_comm = comm;
+
+  ASSERT_NO_THROW(versos::Repository repo("mydataset", o));
+
+  o.mpi_leader_rank = -1;
 
   ASSERT_ANY_THROW(versos::Repository repo("mydataset", o));
 
@@ -41,9 +41,9 @@ TEST(mpicoordinator_test, basic_commit_of_root)
 {
   versos::Options o;
 
-  o.metadb = "mem";
+  o.metadb_type = versos::Options::MetaDB::MEM;
   o.metadb_initialize_if_empty = true;
-  o.coordinator = "mpi";
+  o.coordinator_type = versos::Options::Coordinator::MPI;
   o.mpi_leader_rank = 0;
   o.mpi_comm = comm;
   o.hash_seed = "theseedforthetest";
@@ -114,9 +114,9 @@ TEST(mpicoordinator_test, values_between_versions)
 {
   versos::Options o;
 
-  o.metadb = "mem";
+  o.metadb_type = versos::Options::MetaDB::MEM;
   o.metadb_initialize_if_empty = true;
-  o.coordinator = "mpi";
+  o.coordinator_type = versos::Options::Coordinator::MPI;
   o.mpi_leader_rank = 0;
   o.mpi_comm = comm;
   o.hash_seed = "theseedforthetest";

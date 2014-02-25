@@ -2,26 +2,16 @@
 
 #include <gtest/gtest.h>
 
-#include <mpi.h>
-
-TEST(repository_test, factory)
+TEST(repository_test, test_default_options)
 {
   versos::Options o;
 
-  o.metadb = "mem";
-  o.coordinator = "single";
-
   ASSERT_NO_THROW(versos::Repository repo("mydataset", o));
 
-  o.metadb = "foo";
-  o.coordinator = "single";
+  o.metadb_type = versos::Options::MetaDB::MEM;
+  o.coordinator_type = versos::Options::Coordinator::SINGLE_CLIENT;
 
-  ASSERT_ANY_THROW(versos::Repository repo("mydataset", o));
-
-  o.metadb = "mem";
-  o.coordinator = "foo";
-
-  ASSERT_ANY_THROW(versos::Repository repo("mydataset", o));
+  ASSERT_NO_THROW(versos::Repository repo("mydataset", o));
 }
 
 int main(int argc, char **argv)

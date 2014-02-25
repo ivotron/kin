@@ -4,6 +4,8 @@
 
 #include "versos/coordination/coordinator.h"
 
+#include "versos/options.h"
+
 #ifndef SINGLE_CLIENT_COORDINATOR_H
 #define SINGLE_CLIENT_COORDINATOR_H
 
@@ -16,11 +18,12 @@ namespace versos
   {
   protected:
     RefDB& refdb;
-    std::string msg;
+    std::string hashSeed;
   public:
     SingleClientCoordinator(const SingleClientCoordinator& copy);
+    SingleClientCoordinator(RefDB& refdb, const Options& o);
     SingleClientCoordinator(RefDB& refdb);
-    SingleClientCoordinator(RefDB& refdb, const std::string& msg);
+    SingleClientCoordinator(RefDB& refdb, const std::string& hashSeed);
     ~SingleClientCoordinator();
 
     // inherited

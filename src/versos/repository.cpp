@@ -1,5 +1,6 @@
 #include "versos/repository.h"
 
+#include "versos/options.h"
 #include "versos/coordination/singleclientcoordinator.h"
 #include "versos/coordination/mpicoordinator.h"
 
@@ -11,20 +12,20 @@ namespace versos
 {
   Repository::Repository(const std::string& name, const Options& o) : name(name)
   {
-    if (o.metadb == "mem")
-      refdb = new MemRefDB(name);
+    if (o.metadb_type == Options::MetaDB::MEM)
+      refdb = new MemRefDB(name + "_metadb");
     else
-      throw std::runtime_error("metadb");
+      throw std::runtime_error("unknown metadb class");
 
     if (o.metadb_initialize_if_empty == true && refdb->isEmpty() && refdb->init())
-      throw std::runtime_error("metadb.init");
+      throw std::runtime_error("refdb.init");
 
-    if (o.coordinator == "mpi")
-      coordinator = new MpiCoordinator(o.mpi_comm, o.mpi_leader_rank, *refdb, o.hash_seed);
-    else if (o.coordinator == "single")
-      coordinator = new SingleClientCoordinator(*refdb);
+    if (o.coordinator_type == Options::Coordinator::SINGLE_CLIENT)
+      coordinator = new SingleClientCoordinator(*refdb, o);
+    else if (o.coordinator_type == Options::Coordinator::MPI)
+      coordinator = new MpiCoordinator(*refdb, o);
     else
-      throw std::runtime_error("coordinator");
+      throw std::runtime_error("unknown coordinator class");
 
     if (coordinator == NULL || refdb == NULL)
       throw std::runtime_error("none");

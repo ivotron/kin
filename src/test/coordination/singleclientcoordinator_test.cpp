@@ -7,9 +7,9 @@ TEST(singlecoordinator, basic_commit_of_root)
 {
   versos::Options o;
 
-  o.metadb = "mem";
+  o.metadb_type = versos::Options::MetaDB::MEM;
   o.metadb_initialize_if_empty = true;
-  o.coordinator = "single";
+  o.coordinator_type = versos::Options::Coordinator::SINGLE_CLIENT;
 
   versos::Repository repo("mydataset", o);
 
@@ -77,9 +77,9 @@ TEST(singlecoordinator, values_between_versions)
 {
   versos::Options o;
 
-  o.metadb = "mem";
-  o.coordinator = "single";
+  o.metadb_type = versos::Options::MetaDB::MEM;
   o.metadb_initialize_if_empty = true;
+  o.coordinator_type = versos::Options::Coordinator::SINGLE_CLIENT;
 
   versos::Repository repo("mydataset", o);
 
