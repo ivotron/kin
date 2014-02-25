@@ -10,22 +10,52 @@
 MPI_Comm comm;
 int myrank;
 
-TEST(mpicoordinator, basic_commit_of_root)
+TEST(mpicoordinator_test, factory)
 {
-  versos::MemRefDB refdb;
-  versos::MpiCoordinator coord(comm, 0, refdb, "theseedforthetest");
+  versos::Options o;
 
-  versos::Repository repo("mydataset", coord);
+  o.metadb = "mem";
+  o.coordinator = "mpi";
 
-  if (repo.isEmpty())
-    repo.init();
+  ASSERT_ANY_THROW(versos::Repository repo("mydataset", o));
+
+  o.mpi_leader_rank = -1;
+  o.mpi_comm = comm;
+
+  ASSERT_ANY_THROW(versos::Repository repo("mydataset", o));
+
+  int size;
+
+  MPI_Comm_size(comm, &size);
+
+  o.mpi_leader_rank = size;
+
+  ASSERT_ANY_THROW(versos::Repository repo("mydataset", o));
+
+  o.mpi_leader_rank = 0;
+
+  ASSERT_NO_THROW(versos::Repository repo("mydataset", o));
+}
+
+TEST(mpicoordinator_test, basic_commit_of_root)
+{
+  versos::Options o;
+
+  o.metadb = "mem";
+  o.metadb_initialize_if_empty = true;
+  o.coordinator = "mpi";
+  o.mpi_leader_rank = 0;
+  o.mpi_comm = comm;
+  o.hash_seed = "theseedforthetest";
+
+  versos::Repository repo("mydataset", o);
 
   const versos::Version& head = repo.checkoutHEAD();
 
   ASSERT_TRUE(head.isCommitted());
-  ASSERT_EQ(head.getStatus(), versos::Version::COMMITTED);
-  ASSERT_EQ(head.getObjects().size(), 0u);
-  ASSERT_EQ(head.getId(), versos::Version::PARENT_FOR_ROOT.getId());
+  ASSERT_EQ(versos::Version::COMMITTED, head.getStatus());
+  ASSERT_EQ(0u, head.getObjects().size());
+  ASSERT_EQ(versos::Version::PARENT_FOR_ROOT.getId(), head.getId());
 
   ASSERT_TRUE(head.isOK());
 
@@ -33,76 +63,78 @@ TEST(mpicoordinator, basic_commit_of_root)
 
   ASSERT_TRUE(v1.isOK());
   ASSERT_TRUE(!v1.isCommitted());
-  ASSERT_EQ(v1.getStatus(), versos::Version::STAGED);
-  ASSERT_EQ(v1.getObjects().size(), 0u);
-  ASSERT_NE(v1.getId(), versos::Version::PARENT_FOR_ROOT.getId());
+  ASSERT_EQ(versos::Version::STAGED, v1.getStatus());
+  ASSERT_EQ(0u, v1.getObjects().size());
+  ASSERT_NE(versos::Version::PARENT_FOR_ROOT.getId(), v1.getId());
 
   versos::MemVersionedObject o1(repo, "o" + boost::lexical_cast<std::string>(myrank));
 
-  ASSERT_EQ(0, v1.add(o1));
+  ASSERT_EQ(0, repo.add(v1, o1));
 
   ASSERT_TRUE(!v1.isCommitted());
-  ASSERT_EQ(v1.getStatus(), versos::Version::STAGED);
-  ASSERT_EQ(v1.getObjects().size(), 1u);
+  ASSERT_EQ(versos::Version::STAGED, v1.getStatus());
+  ASSERT_EQ(1u, v1.getObjects().size());
   ASSERT_TRUE(v1.contains(o1));
 
-  ASSERT_EQ(0, v1.commit());
+  ASSERT_EQ(0, repo.commit(v1));
 
+  ASSERT_EQ(v1, repo.checkoutHEAD());
   ASSERT_TRUE(v1.isCommitted());
-  ASSERT_EQ(v1.getStatus(), versos::Version::COMMITTED);
-  ASSERT_EQ(v1.getObjects().size(), 1u);
+  ASSERT_EQ(versos::Version::COMMITTED, v1.getStatus());
+  ASSERT_EQ(1u, v1.getObjects().size());
 
   versos::Version& v2 = repo.create(v1);
 
   ASSERT_NE(v1, v2);
   ASSERT_TRUE(v2.isOK());
   ASSERT_TRUE(!v2.isCommitted());
-  ASSERT_EQ(v2.getStatus(), versos::Version::STAGED);
-  ASSERT_EQ(v2.getObjects().size(), 1u);
+  ASSERT_EQ(versos::Version::STAGED, v2.getStatus());
+  ASSERT_EQ(1u, v2.getObjects().size());
   ASSERT_TRUE(v2.contains(o1));
 
-  ASSERT_EQ(v2.remove(o1), 0);
+  ASSERT_EQ(0, repo.remove(v2, o1));
 
   ASSERT_TRUE(!v2.isCommitted());
-  ASSERT_EQ(v2.getObjects().size(), 0u);
+  ASSERT_EQ(0u, v2.getObjects().size());
   ASSERT_TRUE(!v2.contains(o1));
 
-  ASSERT_EQ(v2.commit(), 0);
+  ASSERT_EQ(0, repo.commit(v2));
 
+  ASSERT_EQ(v2, repo.checkoutHEAD());
   ASSERT_TRUE(v2.isCommitted());
-  ASSERT_EQ(v2.getStatus(), versos::Version::COMMITTED);
-  ASSERT_EQ(v2.getObjects().size(), 0u);
+  ASSERT_EQ(versos::Version::COMMITTED, v2.getStatus());
+  ASSERT_EQ(0u, v2.getObjects().size());
   ASSERT_TRUE(!v2.contains(o1));
 
   ASSERT_TRUE(!head.contains(o1));
   ASSERT_TRUE(v1.contains(o1));
 }
 
-TEST(mpicoordinator, values_between_versions)
+TEST(mpicoordinator_test, values_between_versions)
 {
-  versos::MemRefDB refdb;
-  versos::MpiCoordinator coord(comm, 0, refdb, "theseedforthetest");
+  versos::Options o;
 
-  versos::Repository repo("mydataset", coord);
+  o.metadb = "mem";
+  o.metadb_initialize_if_empty = true;
+  o.coordinator = "mpi";
+  o.mpi_leader_rank = 0;
+  o.mpi_comm = comm;
+  o.hash_seed = "theseedforthetest";
 
-  if (repo.isEmpty())
-    repo.init();
+  versos::Repository repo("mydataset", o);
 
   const versos::Version& head = repo.checkoutHEAD();
   versos::Version& v1 = repo.create(head);
 
   versos::MemVersionedObject o1(repo, "o" + boost::lexical_cast<std::string>(myrank));
 
-  ASSERT_EQ(0, v1.add(o1));
+  ASSERT_EQ(0, repo.add(v1, o1));
 
   ASSERT_EQ(0, o1.write(v1, "first"));
 
-  ASSERT_EQ(0, v1.commit());
+  ASSERT_EQ(0, repo.commit(v1));
 
   versos::Version& v2 = repo.create(v1);
-
-  ASSERT_NE(v2, versos::Version::ERROR);
-  ASSERT_NE(v2, versos::Version::NOT_FOUND);
 
   ASSERT_NE(v1, v2);
 

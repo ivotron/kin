@@ -1,17 +1,15 @@
 #include "versos/coordination/singleclientcoordinator.h"
 
+#include "versos/version.h"
+#include "versos/objectversioning/versionedobject.h"
 #include "versos/refdb/refdb.h"
 
 #include <boost/ptr_container/ptr_set.hpp>
 
 namespace versos
 {
-  SingleClientCoordinator::SingleClientCoordinator() : refdb(RefDB::NONE)
-  {
-  }
-
   SingleClientCoordinator::SingleClientCoordinator(RefDB& refdb, const std::string& msg) :
-    refdb(*refdb.clone()), msg(msg)
+    refdb(refdb), msg(msg)
   {
   }
 
@@ -33,9 +31,6 @@ namespace versos
   {
     id = refdb.getHeadId();
 
-    if (id.empty())
-      return -21;
-
     return 0;
   }
 
@@ -46,7 +41,7 @@ namespace versos
 
   Version& SingleClientCoordinator::create(const Version& parent)
   {
-    Version& v = refdb.create(parent, *this, msg);
+    Version& v = refdb.create(parent, msg);
 
     if (v == Version::ERROR)
       return v;
@@ -67,31 +62,26 @@ namespace versos
 
   int SingleClientCoordinator::add(const Version& v, VersionedObject& o)
   {
-    // we add without checking what v's state is since Version is doing all the checks
+    // we add without checking what v's state is since Repository is doing all the checks
     return o.create(checkout(v.getParentId()), v);
   }
 
   int SingleClientCoordinator::remove(const Version& v, VersionedObject& o)
   {
-    // we remove without checking what v's state is since Version is doing all the checks
+    // we remove without checking what v's state is since Repository is doing all the checks
     return o.remove(v);
   }
 
   int SingleClientCoordinator::commit(const Version& v)
   {
-    // we commit without checking what v's state is since Version is doing all the checks
+    // we commit without checking what v's state is since Repository is doing all the checks
     boost::ptr_set<VersionedObject>::iterator it;
 
     for (it = v.getObjects().begin(); it != v.getObjects().end(); ++it)
       if (it->commit(v))
-        return -1;
+        return -22;
 
     return refdb.commit(v);
-  }
-
-  Coordinator* SingleClientCoordinator::clone() const
-  {
-    return new SingleClientCoordinator(refdb);
   }
 
   int SingleClientCoordinator::initRepository()
@@ -102,5 +92,10 @@ namespace versos
   bool SingleClientCoordinator::isRepositoryEmpty()
   {
     return refdb.isEmpty();
+  }
+
+  int SingleClientCoordinator::shutdown()
+  {
+    return refdb.close();
   }
 }

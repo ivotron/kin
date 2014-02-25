@@ -10,17 +10,21 @@
 #include <set>
 
 #include <boost/ptr_container/ptr_set.hpp>
+#include <boost/serialization/access.hpp>
 
 namespace versos
 {
   class VersionedObject;
   class Coordinator;
+  class Repository;
 
   /**
    * interface to a version.
    */
   class Version
   {
+    friend class boost::serialization::access;
+    friend class Repository;
   public:
     /**
      * ONLY_ONE is used only by the singleton NOT_FOUND and is used to 
@@ -30,38 +34,22 @@ namespace versos
     static Version NOT_FOUND;
     static Version ERROR;
     static Version PARENT_FOR_ROOT;
+  protected:
 
   private:
     const std::string id;
     const std::string parentId;
     Status status;
     boost::ptr_set<VersionedObject> objects;
-    Coordinator* coordinator;
 
   public:
-    Version(std::string id, const Version& parent, Coordinator& c);
-    Version(std::string id, const std::string parentId, const boost::ptr_set<VersionedObject>& objects, 
-        Coordinator& c);
+    Version(std::string id, const Version& parent);
+    Version(std::string id, const std::string parentId, const boost::ptr_set<VersionedObject>& objects);
     Version(const Version& copy);
     ~Version();
 
     Status getStatus() const;
     const std::string& getId() const;
-
-    /**
-     * Adds an object to this version. Fails if version is read only.
-     */
-    int add(VersionedObject& o);
-
-    /**
-     * removes an object.
-     */
-    int remove(VersionedObject& o);
-
-    /**
-     * commits the staged objects.
-     */
-    int commit();
 
     /**
      * commits the staged objects.
@@ -91,8 +79,38 @@ namespace versos
      */
     bool isOK() const;
 
+    std::ostream& dump(std::ostream& o) const;
+
+  protected:
+    /**
+     * Adds an object to this version.
+     */
+    int add(VersionedObject& o);
+
+    /**
+     * removes an object.
+     */
+    int remove(VersionedObject& o);
+
+    /**
+     * commits the staged objects.
+     */
+    void setStatus(Status status);
+
   private:
+    Version();
     Version(const std::string& id);
+
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int)
+    {
+      ar & id;
+      ar & parentId;
+      ar & status;
+      ar & objects;
+    }
   };
+
+  std::ostream& operator<<(std::ostream& o, const Version& b);
 }
 #endif

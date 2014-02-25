@@ -1,14 +1,39 @@
 #include "versos/repository.h"
 
+#include "versos/coordination/singleclientcoordinator.h"
+#include "versos/coordination/mpicoordinator.h"
+
+#include "versos/refdb/memrefdb.h"
+
+#include <stdexcept>
+
 namespace versos
 {
-  Repository::Repository(const std::string& name, Coordinator& coordinator) :
-    name(name), coordinator(coordinator.clone())
+  Repository::Repository(const std::string& name, const Options& o) : name(name)
   {
+    if (o.metadb == "mem")
+      refdb = new MemRefDB(name);
+    else
+      throw std::runtime_error("metadb");
+
+    if (o.metadb_initialize_if_empty == true && refdb->isEmpty() && refdb->init())
+      throw std::runtime_error("metadb.init");
+
+    if (o.coordinator == "mpi")
+      coordinator = new MpiCoordinator(o.mpi_comm, o.mpi_leader_rank, *refdb, o.hash_seed);
+    else if (o.coordinator == "single")
+      coordinator = new SingleClientCoordinator(*refdb);
+    else
+      throw std::runtime_error("coordinator");
+
+    if (coordinator == NULL || refdb == NULL)
+      throw std::runtime_error("none");
   }
 
   Repository::~Repository()
   {
+    delete coordinator;
+    delete refdb;
   }
 
   const std::string& Repository::getName() const
@@ -26,19 +51,6 @@ namespace versos
     return v;
   }
 
-  bool Repository::isEmpty() const
-  {
-    return coordinator->isRepositoryEmpty();
-  }
-
-  int Repository::init()
-  {
-    if (!isEmpty())
-      return -1;
-
-    return coordinator->initRepository();
-  }
-
   const Version& Repository::checkoutHEAD() const
   {
     std::string headId;
@@ -47,6 +59,75 @@ namespace versos
       return Version::ERROR;
 
     return checkout(headId);
+  }
+
+  int Repository::add(Version& v, VersionedObject& o)
+  {
+    if (!v.isOK())
+      return -0;
+
+    if (v.isCommitted())
+      return -1;
+
+    v.add(o);
+
+    int ret = coordinator->add(v, o);
+
+    if(ret)
+      return ret;
+
+    return 0;
+  }
+
+  int Repository::remove(Version& v, VersionedObject& o)
+  {
+    if (!v.isOK())
+      return -2;
+
+    if (v.isCommitted())
+      return -3;
+
+    // TODO: check if user has written to the object, in which case we should fail (or not, based on a knob)
+
+    int ret = coordinator->remove(v, o);
+
+    if (ret)
+      return ret;
+
+    v.remove(o);
+
+    return 0;
+  }
+
+  int Repository::commit(Version& v)
+  {
+    if (!v.isOK())
+      return -4;
+
+    if (v.isCommitted())
+      return -5;
+
+    int ret = coordinator->commit(v);
+
+    if (ret)
+      return ret;
+
+    v.setStatus(Version::COMMITTED);
+
+    return 0;
+  }
+
+  bool Repository::isEmpty() const
+  {
+    return coordinator->isRepositoryEmpty();
+  }
+
+  int Repository::init()
+  {
+    if (!isEmpty())
+      return -7;
+
+    return coordinator->initRepository();
   }
 
   Version& Repository::create(const Version& parent)
@@ -64,5 +145,6 @@ namespace versos
 
   void Repository::close()
   {
+    coordinator->shutdown();
   }
 }

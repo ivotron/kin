@@ -8,6 +8,12 @@ namespace versos
 {
 
   RadosVersionedObject::RadosVersionedObject(
+        librados::IoCtx& ctx, const std::string& repoName, const std::string& baseName) :
+    VersionedObject("rados", repoName, baseName), ioctx(ctx)
+  {
+  }
+
+  RadosVersionedObject::RadosVersionedObject(
         librados::IoCtx& ctx, const Repository& repo, const std::string& baseName) :
     VersionedObject("rados", repo, baseName), ioctx(ctx)
   {
@@ -142,6 +148,6 @@ namespace versos
 
   VersionedObject* RadosVersionedObject::do_clone() const
   {
-    return new RadosVersionedObject(ioctx, repo, baseName);
+    return new RadosVersionedObject(ioctx, repoName, baseName);
   }
 }

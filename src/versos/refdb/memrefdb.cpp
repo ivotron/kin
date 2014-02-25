@@ -1,10 +1,12 @@
 #include "versos/refdb/memrefdb.h"
 
-#include <openssl/sha.h>
+#include "versos/version.h"
+
+#include <boost/serialization/shared_ptr.hpp>
 
 namespace versos
 {
-  MemRefDB::MemRefDB()
+  MemRefDB::MemRefDB(const std::string& repoName) : RefDB(repoName)
   {
   }
 
@@ -12,19 +14,13 @@ namespace versos
   {
   }
 
-  RefDB* MemRefDB::clone()
+  int MemRefDB::open()
   {
-    return new MemRefDB();
+    return 0;
   }
 
-  int MemRefDB::init()
+  int MemRefDB::close()
   {
-    boost::shared_ptr<Version> v(new Version(Version::PARENT_FOR_ROOT));
-
-    revisions[Version::PARENT_FOR_ROOT.getId()] = v;
-
-    headId = Version::PARENT_FOR_ROOT.getId();
-
     return 0;
   }
 
@@ -33,15 +29,14 @@ namespace versos
     return revisions.empty();
   }
 
-  const std::string& MemRefDB::getHeadId() const
+  int MemRefDB::commit(const Version& v)
   {
-    return headId;
-  };
+    if (v.getParentId() != getHeadId())
+      // we only support sequential histories, thus if HEAD changed since the time @c v's was instantiated, 
+      // then committing would break the versioning sequence
+      return -54;
 
-  int MemRefDB::remove(const Version& uncommitted)
-  {
-    if (revisions.erase(uncommitted.getId()) != 1)
-      return -52;
+    headId = v.getId();
 
     return 0;
   }
@@ -56,21 +51,12 @@ namespace versos
     return v;
   }
 
-  Version& MemRefDB::create(const Version& parent, Coordinator& coordinator, const std::string& msg)
+  int MemRefDB::remove(const Version& uncommitted)
   {
-    unsigned char childSHA1[20];
+    if (revisions.erase(uncommitted.getId()) != 1)
+      return -52;
 
-    std::string d = parent.getId() + msg;
-
-    SHA1((const unsigned char*) d.c_str(), parent.getId().size(), childSHA1);
-
-    std::string childHash(childSHA1, childSHA1 + 20);
-
-    boost::shared_ptr<Version> v(new Version(childHash, parent, coordinator));
-
-    revisions[v->getId()] = v;
-
-    return *v;
+    return 0;
   }
 
   int MemRefDB::lock(const Version&, int)
@@ -78,13 +64,13 @@ namespace versos
     return -53;
   }
 
-  int MemRefDB::commit(const Version& v)
+  int MemRefDB::own(boost::shared_ptr<Version> v)
   {
-    if (v.getParentId() != getHeadId())
-      // HEAD changed since @c v's creation, so committing would break the versioning sequence
-      return -54;
+    if (revisions.find(v->getId()) != revisions.end())
+      // re-adding an already-added version; or (very unlikely) there is a SHA1 collision
+      return -56;
 
-    headId = v.getId();
+    revisions[v->getId()] = v;
 
     return 0;
   }

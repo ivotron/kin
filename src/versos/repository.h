@@ -2,16 +2,71 @@
 #define REPOSITORY_H
 
 #include "versos/version.h"
-#include "versos/coordination/coordinator.h"
 
 #include <string>
 #include <map>
 #include <set>
 
-#include <boost/scoped_ptr.hpp>
+// TODO: ifdef WITH_MPI_COORDINATOR
+#include <mpi.h>
+// TODO: endif
 
 namespace versos
 {
+  class Coordinator;
+  class RefDB;
+
+  /**
+   * Options to control the behavior of a repository (passed to @c Repository constructor)
+   */
+  struct Options
+  {
+    /**
+     * name of coordinator class. Current alternatives:
+     *
+     *   - @c single
+     *   - @c mpi
+     *   - @c backend
+     */
+    std::string coordinator;
+
+    /**
+     * name of metadata database class. Current alternatives:
+     *
+     *   - @c mem
+     *   - @c rados
+     *   - @c redis
+     */
+    std::string metadb;
+
+    /**
+     * whether to initialize db if empty. Default: false.
+     */
+    bool metadb_initialize_if_empty;
+
+    /**
+     * what to use to seed the internal hashing algorithm.
+     */
+    std::string hash_seed;
+
+// TODO: ifdef (ENABLE_MPI_COORDINATOR)
+    /** options for mpi coordination. @see MpiCoordinator */
+    int mpi_leader_rank;
+    MPI_Comm mpi_comm;
+// TODO: endif
+
+    Options()
+    {
+      hash_seed = "default seed";
+      metadb_initialize_if_empty = false;
+
+// TODO: ifdef (ENABLE_MPI_COORDINATOR)
+      mpi_leader_rank = -1;
+      mpi_comm = MPI_COMM_NULL;
+// TODO: endif
+    }
+  };
+
   /**
    * The main interface for checking-out/creating versions.
    */
@@ -19,7 +74,8 @@ namespace versos
   {
   private:
     std::string name;
-    boost::scoped_ptr<Coordinator> coordinator;
+    Coordinator* coordinator;
+    RefDB* refdb;
 
   public:
     static Repository NONE;
@@ -27,7 +83,7 @@ namespace versos
     /**
      * creates a new versioning context for the given repository name.
      */
-    Repository(const std::string& name, Coordinator& c);
+    Repository(const std::string& name, const Options& o);
     Repository();
     ~Repository();
 
@@ -63,6 +119,21 @@ namespace versos
      * creates a new staged version based on the given parent.
      */
     Version& create(const Version& parent);
+
+    /**
+     * Adds an object to the given version. Fails if version is read only.
+     */
+    int add(Version& v, VersionedObject& o);
+
+    /**
+     * removes an object.
+     */
+    int remove(Version& v, VersionedObject& o);
+
+    /**
+     * removes an object.
+     */
+    int commit(Version& v);
 
     /**
      */
@@ -118,6 +189,8 @@ namespace versos
      *     either case, we assume snapshotting as a first-class citizen in the @c VersionedObject interface, 
      *     so we take advantage of backends that can provide efficient ways of doing this.
      *
+     *   - git uses an object databse, whereas we use @c VersionedObject's
+     *
      * TODO: on a more C++-specific note: throughout the library, we don't take ownership of passed pointers. 
      * Instead, we just make copies of @c Coordinator, @c RefDB and @c VersionedObject instances passed by the 
      * user. In this way, the user doesn't have to worry about memory management. This works because the user 
@@ -140,6 +213,14 @@ namespace versos
      *   50-59 : memrefdb
      *   60-69 : mpicoord
      *   70-79 : versionedobject
+     *   80-89 : refdb
+     *
+     * TODO: four options of operation for client-coordinated optimistic mod based on the following:
+     *   - synchronization of object metadata has to be done synchronously/async before the commit is 
+     *   registered in the metadb
+     *   - sync of object metadata has to be done synchronously/async before the next staged version begins to 
+     *   be written to
+     *
      */
   };
 }

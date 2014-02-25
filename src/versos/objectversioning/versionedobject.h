@@ -6,6 +6,7 @@
 #include <string>
 
 #include <boost/noncopyable.hpp>
+#include <boost/serialization/access.hpp>
 
 namespace versos
 {
@@ -23,14 +24,18 @@ namespace versos
    */
   class VersionedObject : boost::noncopyable
   {
+    friend class boost::serialization::access;
+
     // note: this is not pure virtual so that it can be used in boost::ptr_container's
   protected:
     std::string interfaceName;
-    const Repository& repo;
+    std::string repoName;
     std::string baseName;
 
   public:
     VersionedObject(const std::string& interfaceName, const Repository& repo, const std::string& baseName);
+    VersionedObject(const std::string& interfaceName, const std::string& repoName, const std::string& 
+        baseName);
 
     virtual ~VersionedObject();
 
@@ -48,7 +53,7 @@ namespace versos
      * given object. Future attempts to write to the object will fail.
      *
      * We can safely assume that the version is safe to commit (i.e. it's not a Version::NOT_FOUND, etc..), 
-     * since @c Version has already done this check.
+     * since @c Repository has already done this check.
      */
     virtual int commit(const Version& v) = 0;
 
@@ -56,7 +61,7 @@ namespace versos
      * removes the given version of this object.
      *
      * We can safely assume that the version is safe to be removed (i.e. it's not a Version::NOT_FOUND, 
-     * etc..), since @c Version has already done this check.
+     * etc..), since @c Repository has already done this check.
      */
     virtual int remove(const Version& v) = 0;
 
@@ -74,6 +79,13 @@ namespace versos
 
   private:
     virtual VersionedObject* do_clone() const = 0;
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int)
+    {
+      ar & interfaceName;
+      ar & repoName;
+      ar & baseName;
+    }
   };
 
   VersionedObject* new_clone( const VersionedObject& vo );

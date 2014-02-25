@@ -5,6 +5,11 @@
 
 namespace versos
 {
+  MemVersionedObject::MemVersionedObject(const std::string& repoName, const std::string& baseName)
+    : VersionedObject("in-mem", repoName, baseName)
+  {
+  }
+
   MemVersionedObject::MemVersionedObject(const Repository& repo, const std::string& baseName)
     : VersionedObject("in-mem", repo, baseName)
   {
@@ -78,6 +83,6 @@ namespace versos
 
   VersionedObject* MemVersionedObject::do_clone() const
   {
-    return new MemVersionedObject(repo, baseName);
+    return new MemVersionedObject(repoName, baseName);
   }
 }

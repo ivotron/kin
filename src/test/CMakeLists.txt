@@ -16,6 +16,10 @@ IF (!OPENSSL_FOUND)
   MESSAGE (FATAL_ERROR "OpenSSL required")
 ENDIF ()
 
+IF (!Boost_FOUND)
+  MESSAGE (FATAL_ERROR "Boost required")
+ENDIF ()
+
 IF (NOT TARGET versos)
   MESSAGE (FATAL_ERROR "versos target not found")
 ENDIF ()
@@ -29,10 +33,10 @@ ADD_SUBDIRECTORY (gmock)
 INCLUDE_DIRECTORIES ("gmock/include")
 INCLUDE_DIRECTORIES ("gmock/gtest/include")
 
-SET (DEP_LIBS gtest gtest_main gmock gmock_main ${OPENSSL_LIBRARIES})
+SET (DEP_LIBRARIES gtest gtest_main gmock gmock_main ${OPENSSL_LIBRARIES})
 
 IF (ENABLE_MPI_COORDINATOR)
-  SET(DEP_LIBS ${DEP_LIBS} ${MPI_LIBRARIES})
+  SET(DEP_LIBRARIES ${DEP_LIBRARIES} ${MPI_LIBRARIES} ${Boost_LIBRARIES})
 ENDIF()
 
 #------------------------------------------------------------------------------
@@ -41,7 +45,7 @@ ENDIF()
 
 MACRO (BUILD_TEST bin_name src_name)
   ADD_EXECUTABLE (${bin_name} ${CMAKE_CURRENT_SOURCE_DIR}/${src_name})
-  TARGET_LINK_LIBRARIES (${bin_name} versos ${DEP_LIBS})
+  TARGET_LINK_LIBRARIES (${bin_name} versos ${DEP_LIBRARIES})
 ENDMACRO ()
 
 MACRO (BUILD_AND_ADD_TEST bin_name src_name)
@@ -73,6 +77,8 @@ ENDIF()
 # Build and define tests
 #------------------------------------------------------------------------------
 
+BUILD_AND_ADD_TEST (repository_test "repository_test.cpp")
+BUILD_AND_ADD_TEST (memrefdb_test "refdb/memrefdb_test.cpp")
 BUILD_AND_ADD_TEST (singleclientcoordinator_test "coordination/singleclientcoordinator_test.cpp")
 
 IF (ENABLE_MPI_COORDINATOR)

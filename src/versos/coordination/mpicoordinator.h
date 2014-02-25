@@ -31,8 +31,6 @@ namespace versos
     int leaderRank;
     int myRank;
   public:
-    MpiCoordinator();
-    MpiCoordinator(const MpiCoordinator&);
     MpiCoordinator(MPI_Comm comm, int leaderRank, RefDB& refdb, const std::string& msg);
     ~MpiCoordinator();
 
@@ -45,7 +43,7 @@ namespace versos
     int commit(const Version& v);
     int initRepository();
     bool isRepositoryEmpty();
-    Coordinator* clone() const;
+    int shutdown();
   };
 }
 #endif

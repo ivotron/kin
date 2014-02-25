@@ -1,26 +1,24 @@
 #include "versos/repository.h"
-#include "versos/refdb/memrefdb.h"
-#include "versos/coordination/singleclientcoordinator.h"
 #include "versos/objectversioning/memversionedobject.h"
 
 #include <gtest/gtest.h>
 
 TEST(singlecoordinator, basic_commit_of_root)
 {
-  versos::MemRefDB refdb;
-  versos::SingleClientCoordinator coord(refdb);
+  versos::Options o;
 
-  versos::Repository repo("mydataset", coord);
+  o.metadb = "mem";
+  o.metadb_initialize_if_empty = true;
+  o.coordinator = "single";
 
-  if (repo.isEmpty())
-    repo.init();
+  versos::Repository repo("mydataset", o);
 
   const versos::Version& head = repo.checkoutHEAD();
 
   ASSERT_TRUE(head.isCommitted());
-  ASSERT_EQ(head.getStatus(), versos::Version::COMMITTED);
-  ASSERT_EQ(head.getObjects().size(), 0u);
-  ASSERT_EQ(head.getId(), versos::Version::PARENT_FOR_ROOT.getId());
+  ASSERT_EQ(versos::Version::COMMITTED, head.getStatus());
+  ASSERT_EQ(0u, head.getObjects().size());
+  ASSERT_EQ(versos::Version::PARENT_FOR_ROOT.getId(), head.getId());
 
   ASSERT_TRUE(head.isOK());
 
@@ -28,45 +26,47 @@ TEST(singlecoordinator, basic_commit_of_root)
 
   ASSERT_TRUE(v1.isOK());
   ASSERT_TRUE(!v1.isCommitted());
-  ASSERT_EQ(v1.getStatus(), versos::Version::STAGED);
-  ASSERT_EQ(v1.getObjects().size(), 0u);
-  ASSERT_NE(v1.getId(), versos::Version::PARENT_FOR_ROOT.getId());
+  ASSERT_EQ(versos::Version::STAGED, v1.getStatus());
+  ASSERT_EQ(0u, v1.getObjects().size());
+  ASSERT_NE(versos::Version::PARENT_FOR_ROOT.getId(), v1.getId());
 
   versos::MemVersionedObject o1(repo, "o1");
 
-  ASSERT_EQ(0, v1.add(o1));
+  ASSERT_EQ(0, repo.add(v1, o1));
 
   ASSERT_TRUE(!v1.isCommitted());
-  ASSERT_EQ(v1.getStatus(), versos::Version::STAGED);
-  ASSERT_EQ(v1.getObjects().size(), 1u);
+  ASSERT_EQ(versos::Version::STAGED, v1.getStatus());
+  ASSERT_EQ(1u, v1.getObjects().size());
   ASSERT_TRUE(v1.contains(o1));
 
-  ASSERT_EQ(0, v1.commit());
+  ASSERT_EQ(0, repo.commit(v1));
 
+  ASSERT_EQ(v1, repo.checkoutHEAD());
   ASSERT_TRUE(v1.isCommitted());
-  ASSERT_EQ(v1.getStatus(), versos::Version::COMMITTED);
-  ASSERT_EQ(v1.getObjects().size(), 1u);
+  ASSERT_EQ(versos::Version::COMMITTED, v1.getStatus());
+  ASSERT_EQ(1u, v1.getObjects().size());
 
   versos::Version& v2 = repo.create(v1);
 
   ASSERT_NE(v1, v2);
   ASSERT_TRUE(v2.isOK());
   ASSERT_TRUE(!v2.isCommitted());
-  ASSERT_EQ(v2.getStatus(), versos::Version::STAGED);
-  ASSERT_EQ(v2.getObjects().size(), 1u);
+  ASSERT_EQ(versos::Version::STAGED, v2.getStatus());
+  ASSERT_EQ(1u, v2.getObjects().size());
   ASSERT_TRUE(v2.contains(o1));
 
-  ASSERT_EQ(v2.remove(o1), 0);
+  ASSERT_EQ(0, repo.remove(v2, o1));
 
   ASSERT_TRUE(!v2.isCommitted());
-  ASSERT_EQ(v2.getObjects().size(), 0u);
+  ASSERT_EQ(0u, v2.getObjects().size());
   ASSERT_TRUE(!v2.contains(o1));
 
-  ASSERT_EQ(v2.commit(), 0);
+  ASSERT_EQ(0, repo.commit(v2));
 
+  ASSERT_EQ(v2, repo.checkoutHEAD());
   ASSERT_TRUE(v2.isCommitted());
-  ASSERT_EQ(v2.getStatus(), versos::Version::COMMITTED);
-  ASSERT_EQ(v2.getObjects().size(), 0u);
+  ASSERT_EQ(versos::Version::COMMITTED, v2.getStatus());
+  ASSERT_EQ(0u, v2.getObjects().size());
   ASSERT_TRUE(!v2.contains(o1));
 
   ASSERT_TRUE(!head.contains(o1));
@@ -75,24 +75,24 @@ TEST(singlecoordinator, basic_commit_of_root)
 
 TEST(singlecoordinator, values_between_versions)
 {
-  versos::MemRefDB refdb;
-  versos::SingleClientCoordinator coord(refdb);
+  versos::Options o;
 
-  versos::Repository repo("mydataset", coord);
+  o.metadb = "mem";
+  o.coordinator = "single";
+  o.metadb_initialize_if_empty = true;
 
-  if (repo.isEmpty())
-    repo.init();
+  versos::Repository repo("mydataset", o);
 
   const versos::Version& head = repo.checkoutHEAD();
   versos::Version& v1 = repo.create(head);
 
   versos::MemVersionedObject o1(repo, "o1");
 
-  ASSERT_EQ(0, v1.add(o1));
+  ASSERT_EQ(0, repo.add(v1, o1));
 
   ASSERT_EQ(0, o1.write(v1, "first"));
 
-  ASSERT_EQ(0, v1.commit());
+  ASSERT_EQ(0, repo.commit(v1));
 
   versos::Version& v2 = repo.create(v1);
 

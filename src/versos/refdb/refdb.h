@@ -1,47 +1,76 @@
 #ifndef REFDB_H
 #define REFDB_H
 
-#include "versos/version.h"
-#include "versos/coordination/coordinator.h"
-#include "versos/objectversioning/versionedobject.h"
-
 #include <string>
-#include <boost/ptr_container/ptr_set.hpp>
+#include <boost/shared_ptr.hpp>
 
 namespace versos
 {
+  class Version;
+
   /**
    */
   class RefDB
   {
-  private:
-    std::string noneOrValid;
-    RefDB(std::string);
+  protected:
+    std::string repoName;
+    std::string headId;
 
   public:
-    static RefDB NONE;
-
-    RefDB();
+    RefDB(const std::string& repoName);
     virtual ~RefDB();
-    virtual int init();
-    virtual bool isEmpty() const;
+    virtual Version& create(const Version&, const std::string& msg);
     virtual const std::string& getHeadId() const;
-    virtual const Version& checkout(const std::string&);
-    virtual Version& create(const Version&, Coordinator&, const std::string&);
 
-    virtual int remove(const Version&);
     /**
-     * lock a revision. modes = EX or SHARED
+     * inits a new db. Might fail if the db has been initialized previously
      */
-    virtual int lock(const Version&, int );
-    virtual int commit(const Version&);
-    virtual RefDB* clone();
+    int init();
+
+    /**
+     * opens the db.
+     */
+    virtual int open() = 0;
+
+    /**
+     * closes the db.
+     */
+    virtual int close() = 0;
+
+    /**
+     * whether the db is empty.
+     */
+    virtual bool isEmpty() const = 0;
+
+    /**
+     * marks the given version as committed.
+     */
+    virtual int commit(const Version& v) = 0;
+
+    /**
+     * retrieves the metadata of the given version id.
+     */
+    virtual const Version& checkout(const std::string& id) = 0;
+
+    /**
+     * removes the given version from the DB and frees memory of the @c Version object.
+     */
+    virtual int remove(const Version& v) = 0;
+
+    /**
+     * acquires a lock for the given version.
+     */
+    virtual int lock(const Version& v, int mode) = 0;
+
+  protected:
+    /**
+     * takes ownership of the passed pointer.
+     */
+    virtual int own(boost::shared_ptr<Version> v) = 0;
   };
-
-    // log-structured:
-    //
-    // 1. get the diff of object removal/deletion w.r.t. parent version
-    // 2. for each added/removed object, add/remove it to the metadata object
-
+  // LogRefDB (log-structured db):
+  //
+  // 1. get the diff of object removal/deletion w.r.t. parent version
+  // 2. for each added/removed object, add/remove it to the metadata object
 }
 #endif

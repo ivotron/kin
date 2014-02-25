@@ -5,32 +5,33 @@
 
 namespace versos
 {
-  Version Version::ERROR = Version("1");
-  Version Version::NOT_FOUND = Version("2");
-  Version Version::PARENT_FOR_ROOT = Version("3");
+  Version Version::ERROR = Version("0000000000000000000000000000000000000001");
+  Version Version::NOT_FOUND = Version("0000000000000000000000000000000000000002");
+  Version Version::PARENT_FOR_ROOT = Version("0000000000000000000000000000000000000003");
 
-  Version::Version(const std::string& id) :
-    id(id), parentId(""), status(Version::NONE), coordinator(NULL)
+  Version::Version() : id(""), parentId(""), status(Version::NONE)
   {
-    if (id == "3")
+  }
+
+  Version::Version(const std::string& id) : id(id), parentId(""), status(Version::NONE)
+  {
+    if (id == "0000000000000000000000000000000000000003")
       // special case for PARENT_FOR_ROOT
       status = COMMITTED;
   }
 
-  Version::Version(std::string id, const Version& parent, Coordinator& c) :
-    id(id), parentId(parent.getId()), status(STAGED), objects(parent.objects), coordinator(&c)
+  Version::Version(std::string id, const Version& parent) :
+    id(id), parentId(parent.getId()), status(STAGED), objects(parent.objects)
   {
   }
 
-  Version::Version(std::string id, std::string parentId, const boost::ptr_set<VersionedObject>& objects, 
-      Coordinator& c) :
-    id(id), parentId(parentId), status(COMMITTED), objects(objects), coordinator(&c)
+  Version::Version(std::string id, std::string parentId, const boost::ptr_set<VersionedObject>& objects) :
+    id(id), parentId(parentId), status(COMMITTED), objects(objects)
   {
   }
 
   Version::Version(const Version& copy) :
-    id(copy.id), parentId(copy.parentId), status(copy.status), objects(copy.objects), 
-    coordinator(copy.coordinator)
+    id(copy.id), parentId(copy.parentId), status(copy.status), objects(copy.objects)
   {
   }
 
@@ -40,42 +41,18 @@ namespace versos
 
   int Version::add(VersionedObject& o)
   {
-    if (!isOK())
-      return -10;
-
-    if (isCommitted())
-      return -11;
-
     if (contains(o))
       return -12;
 
     objects.insert(o.clone());
-
-    int ret = coordinator->add(*this, o);
-
-    if(ret)
-      return ret;
 
     return 0;
   }
 
   int Version::remove(VersionedObject& o)
   {
-    if (!isOK())
-      return -13;
-
-    if (isCommitted())
-      return -14;
-
     if (!contains(o))
       return -15;
-
-    // TODO: check if user has written to the object, in which case we should fail (or not, based on a knob)
-
-    int ret = coordinator->remove(*this, o);
-
-    if (ret)
-      return ret;
 
     if (objects.erase(o) != 1)
       return -16;
@@ -83,22 +60,9 @@ namespace versos
     return 0;
   }
 
-  int Version::commit()
+  void Version::setStatus(Status newStatus)
   {
-    if (!isOK())
-      return -17;
-
-    if (isCommitted())
-      return -18;
-
-    int ret = coordinator->commit(*this);
-
-    if (ret)
-      return ret;
-
-    status = COMMITTED;
-
-    return 0;
+    status = newStatus;
   }
 
   const std::string& Version::getParentId() const
@@ -147,5 +111,22 @@ namespace versos
   bool Version::operator!= (const Version& other) const
   {
     return !(*this == other);
+  }
+
+  std::ostream& Version::dump(std::ostream& o) const
+  {
+    if (*this == Version::NOT_FOUND)
+      o << "NOT_FOUND";
+    else if (*this == Version::ERROR)
+      o << "ERROR";
+    else
+      o << getId();
+
+    return o;
+  }
+
+  std::ostream& operator<<(std::ostream& o, const Version& v)
+  {
+    return v.dump(o);
   }
 }

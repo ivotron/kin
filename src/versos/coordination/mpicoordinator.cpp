@@ -6,13 +6,10 @@
 
 #include <vector>
 
+#include <stdexcept>
+
 namespace versos
 {
-  MpiCoordinator::MpiCoordinator() :
-    SingleClientCoordinator(RefDB::NONE), comm(MPI_COMM_NULL), leaderRank(-1)
-  {
-  }
-
   MpiCoordinator::MpiCoordinator(MPI_Comm comm, int leaderRank, RefDB& refdb, const std::string& msg) :
     SingleClientCoordinator(refdb, msg), comm(comm), leaderRank(leaderRank)
   {
@@ -24,13 +21,22 @@ namespace versos
     // // everybody has a memdb as its refdb, only leader has a valid reference to user-provided redisdb
     // memdb = MemRefDB();
 
-    if(MPI_Comm_rank(comm, &myRank))
-      throw "Error getting MPI rank";
-  }
+    if (comm == MPI_COMM_NULL)
+      throw std::runtime_error("MPI comm is NULL");
 
-  MpiCoordinator::MpiCoordinator(const MpiCoordinator& copy) :
-    SingleClientCoordinator(copy.refdb, copy.msg), comm(copy.comm), leaderRank(copy.leaderRank)
-  {
+    int size;
+
+    if(MPI_Comm_size(comm, &size))
+      throw std::runtime_error("unable to get size of MPI comm");
+
+    if (leaderRank < 0)
+      throw std::runtime_error("leader rank should be positive");
+
+    if (leaderRank > (size - 1))
+      throw std::runtime_error("leader rank shouldn't be greater than size of MPI communicator");
+
+    if(MPI_Comm_rank(comm, &myRank))
+      throw std::runtime_error("unable to get MPI rank");
   }
 
   MpiCoordinator::~MpiCoordinator()
@@ -39,16 +45,22 @@ namespace versos
 
   int MpiCoordinator::getHeadId(std::string& id)
   {
-    if (myRank == leaderRank && SingleClientCoordinator::getHeadId(id))
-        MPI_Abort(comm, -1);
+    std::vector<char> id_vec(40);
 
-    std::vector<char> writable(id.size() + 1);
-    std::copy(id.begin(), id.end(), writable.begin());
+    if (myRank == leaderRank)
+    {
+      if (SingleClientCoordinator::getHeadId(id))
+        MPI_Abort(comm, -100);
 
-    if (MPI_Bcast((void *)&writable[0], 20, MPI_CHAR, leaderRank, comm))
+      id_vec = std::vector<char>(id.begin(), id.end());
+    }
+
+    id_vec.push_back('\0');
+
+    if (MPI_Bcast(&id_vec[0], 40, MPI_CHAR, leaderRank, comm))
       MPI_Abort(comm, -1);
 
-    id = &writable[0];
+    id = &id_vec[0];
 
     return 0;
   }
@@ -126,8 +138,11 @@ namespace versos
     return isEmpty == 0;
   }
 
-  Coordinator* MpiCoordinator::clone() const
+  int MpiCoordinator::shutdown()
   {
-    return new MpiCoordinator(comm, leaderRank, refdb, msg);
+    if (myRank == leaderRank)
+      return refdb.close();
+
+    return 0;
   }
 }

@@ -4,31 +4,30 @@
 #include "versos/refdb/refdb.h"
 
 #include <map>
-#include <boost/shared_ptr.hpp>
 
 namespace versos
 {
   class MemRefDB : public RefDB
   {
   private:
-    std::string headId;
     std::map<std::string, boost::shared_ptr<Version> > revisions;
     // TODO: ideally we'd like to have @c revisions be a KV store instead of a map. Then, a lot of the 
     // functionality implemented on this MemRefDB would move to RefDB and only the access to revisions would 
     // be exposed.
   public:
-    MemRefDB();
+    MemRefDB(const std::string& repoName);
     ~MemRefDB();
-    int init();
-    bool isEmpty() const;
-    const std::string& getHeadId() const;
-    const Version& checkout(const std::string& id);
-    Version& create(const Version& parent, Coordinator& coordinator, const std::string& msg);
-    int remove(const Version& uncommitted);
-    int lock(const Version&, int);
-    int commit(const Version&);
-    RefDB* clone();
-  };
 
+    // inherited
+    int open();
+    int close();
+    bool isEmpty() const;
+    int commit(const Version& v);
+    const Version& checkout(const std::string& id);
+    int remove(const Version& v);
+    int lock(const Version& v, int mode);
+  protected:
+    int own(boost::shared_ptr<Version> v);
+  };
 }
 #endif

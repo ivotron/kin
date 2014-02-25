@@ -12,11 +12,14 @@
 
 namespace versos
 {
+  class Repository;
+
   class MemVersionedObject : public VersionedObject
   {
   private:
     std::map<std::string, std::string> values;
   public:
+    MemVersionedObject(const std::string& repoName, const std::string& baseName);
     MemVersionedObject(const Repository& repo, const std::string& baseName);
 
     virtual ~MemVersionedObject();

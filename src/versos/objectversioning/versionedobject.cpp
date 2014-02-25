@@ -16,8 +16,14 @@ namespace versos
   }
 
   VersionedObject::VersionedObject(
+      const std::string& interfaceName, const std::string& repoName, const std::string& baseName) :
+    interfaceName(interfaceName), repoName(repoName), baseName(baseName)
+  {
+  }
+
+  VersionedObject::VersionedObject(
       const std::string& interfaceName, const Repository& repo, const std::string& baseName) :
-    interfaceName(interfaceName), repo(repo), baseName(baseName)
+    interfaceName(interfaceName), repoName(repo.getName()), baseName(baseName)
   {
   }
 
@@ -37,7 +43,7 @@ namespace versos
       return -71;
 
     // TODO: maintain a cache of generated ids, so that we don't have this concatenation overhead
-    id = interfaceName + "_" + repo.getName() + "_" + baseName + "_" + to_str(v.getId());
+    id = interfaceName + "_" + repoName + "_" + baseName + "_" + to_str(v.getId());
 
     return 0;
   }
@@ -52,7 +58,7 @@ namespace versos
   }
   const std::string& VersionedObject::getRepositoryName() const
   {
-    return repo.getName();
+    return repoName;
   }
 
   VersionedObject* VersionedObject::clone() const

@@ -75,9 +75,9 @@ namespace versos
     virtual bool isRepositoryEmpty() = 0;
 
     /**
-     * copies this object.
+     * shuts down. No more operations can be done after this is invoked.
      */
-    virtual Coordinator* clone() const = 0;
+    virtual int shutdown() = 0;
   };
 }
 

@@ -10,6 +10,7 @@
 namespace versos
 {
   class RefDB;
+  class Version;
 
   class SingleClientCoordinator : public Coordinator
   {
@@ -17,7 +18,6 @@ namespace versos
     RefDB& refdb;
     std::string msg;
   public:
-    SingleClientCoordinator();
     SingleClientCoordinator(const SingleClientCoordinator& copy);
     SingleClientCoordinator(RefDB& refdb);
     SingleClientCoordinator(RefDB& refdb, const std::string& msg);
@@ -32,7 +32,7 @@ namespace versos
     int commit(const Version& v);
     int initRepository();
     bool isRepositoryEmpty();
-    Coordinator* clone() const;
+    int shutdown();
   };
 }
 #endif
