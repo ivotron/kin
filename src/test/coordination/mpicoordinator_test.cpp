@@ -2,9 +2,9 @@
 #include "versos/refdb/memrefdb.h"
 #include "versos/coordination/mpicoordinator.h"
 #include "versos/objectversioning/memversionedobject.h"
+#include "versos/utils.h"
 
 #include <mpi.h>
-#include <boost/lexical_cast.hpp>
 #include <gtest/gtest.h>
 
 MPI_Comm comm;
@@ -67,7 +67,7 @@ TEST(mpicoordinator_test, basic_commit_of_root)
   ASSERT_EQ(0u, v1.getObjects().size());
   ASSERT_NE(versos::Version::PARENT_FOR_ROOT.getId(), v1.getId());
 
-  versos::MemVersionedObject o1(repo, "o" + boost::lexical_cast<std::string>(myrank));
+  versos::MemVersionedObject o1(repo, "o" + Utils::to_str(myrank));
 
   ASSERT_EQ(0, repo.add(v1, o1));
 
@@ -126,7 +126,7 @@ TEST(mpicoordinator_test, values_between_versions)
   const versos::Version& head = repo.checkoutHEAD();
   versos::Version& v1 = repo.create(head);
 
-  versos::MemVersionedObject o1(repo, "o" + boost::lexical_cast<std::string>(myrank));
+  versos::MemVersionedObject o1(repo, "o" + Utils::to_str(myrank));
 
   ASSERT_EQ(0, repo.add(v1, o1));
 
