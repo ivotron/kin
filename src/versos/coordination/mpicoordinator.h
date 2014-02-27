@@ -4,28 +4,15 @@
 #include "versos/coordination/singleclientcoordinator.h"
 
 #include "versos/options.h"
+#include "versos/refdb/memrefdb.h"
 
 #include <mpi.h>
 
 namespace versos
 {
-  class RefDB;
-
   /**
    * coordinates clients that operate concurrently on a repository. MPI coordination has a leader rank that 
-   * acts like a @c SingleClientCoordinator and broadcasts/gathers the info to/from all the other ranks
-   *
-   * TODO: add an option to change the behavior of the coordinator, which can be one of the following:
-   *
-   *   1. Synchronize objects immediately after they're added. This ensures that two or more ranks don't add 
-   *   the same object and thus end up writing to the same object.
-   *
-   *   2. Synchronize objects after every transaction. This maintains the information of which objects 
-   *   are/aren't in which versions, but it doesn't guard against the issue described by 1.
-   *
-   *   3. Don't synchronize. Currently, this is how the mpi coordinator works. It only keeps information about 
-   *   which versions have been committed, but assumes that applications have a way of knowing which objects 
-   *   correspond to which versions.
+   * acts like a @c SingleClientCoordinator and broadcasts/gathers the info to/from all the other ranks.
    */
   class MpiCoordinator : public SingleClientCoordinator
   {
@@ -34,6 +21,8 @@ namespace versos
     int leaderRank;
     int myRank;
     Options::ClientSync::Mode syncMode;
+    MemRefDB localRefDB;
+    int size;
   public:
     MpiCoordinator(RefDB& refdb, const Options& o);
 
@@ -50,13 +39,48 @@ namespace versos
     int getHeadId(std::string& id);
     const Version& checkout(const std::string& id);
     Version& create(const Version& parent);
-    int add(const Version& v, VersionedObject& o);
-    int remove(const Version& v, VersionedObject& o);
-    int commit(const Version& v);
-    int initRepository();
+    int add(Version& v, VersionedObject& o);
+    int remove(Version& v, VersionedObject& o);
+    int commit(Version& v);
     bool isRepositoryEmpty();
     int shutdown();
+
+  protected:
+    // TODO: create a @c MultiClientCoordinator class with the following methods declared as abstract
+    // {
+    /**
+     */
+    void broadcast(int* value) const;
+
+    /**
+     */
+    void broadcast(std::string& id) const;
+
+    /**
+     */
+    void broadcast(boost::ptr_set<VersionedObject>& objects) const;
+
+    /**
+     */
+    void allGather(boost::ptr_set<VersionedObject>& objects) const;
+
+    /**
+     */
+    bool imLeader() const;
+
+    /**
+     */
+    void handleError(int code) const;
+
+    /**
+     */
+    void waitForAll() const;
+    // }
+
   private:
+    /**
+     * initializes the object (common method that multiple constructors call).
+     */
     void init();
   };
 }

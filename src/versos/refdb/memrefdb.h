@@ -18,6 +18,11 @@ namespace versos
     MemRefDB(const std::string& repoName);
     ~MemRefDB();
 
+    /**
+     * adds a version without changing the HEAD (like @c commit() but without the check and HEAD change).
+     */
+    int add(boost::shared_ptr<Version> v);
+
     // inherited
     int open();
     int close();

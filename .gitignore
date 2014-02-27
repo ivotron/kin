@@ -4,3 +4,4 @@
 .DS_Store
 build
 src/test/runtime/*/workdir/
+versos-src.tar.bz2

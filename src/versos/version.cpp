@@ -96,7 +96,12 @@ namespace versos
     return id;
   }
 
-  const boost::ptr_set<VersionedObject>& Version::getObjects() const
+  int Version::size() const
+  {
+    return objects.size();
+  }
+
+  boost::ptr_set<VersionedObject>& Version::getObjects()
   {
     return objects;
   }

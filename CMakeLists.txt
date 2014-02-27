@@ -34,6 +34,7 @@ SET(VERSOS_SRC
   "src/versos/repository.cpp"
   "src/versos/refdb/refdb.cpp"
   "src/versos/refdb/memrefdb.cpp"
+  "src/versos/coordination/coordinator.cpp"
   "src/versos/coordination/singleclientcoordinator.cpp"
   "src/versos/coordination/mpicoordinator.cpp"
   "src/versos/objectversioning/versionedobject.cpp"

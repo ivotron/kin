@@ -58,13 +58,18 @@ namespace versos
      * objects are being handled by whom (i.e. at what point in time do clients exchange metadata about the 
      * objects being modified by each).
      *
-     * @c NONE doesn't share any information. This is useful for applications that "know what they're doing". 
-     * @c AT_EACH_COMMIT synchronizes information right after a version has been committed, that is, after the 
-     * user executes @c Repository::commit(). @c AT_EACH_ADD_OR_REMOVE synchronizes every time an application 
-     * adds or removes an object from a revision, i.e. after every @c Repository::add() or @c 
-     * Repository::remove().
+     * @c NONE doesn't share any information. This is useful for applications that "know what they're doing", 
+     * which implies that s/he is responsible for managing object-in-version containment metadata. In other 
+     * words, the refdb only stores the parent-child relationship of versions but not of what each version 
+     * contains.
      *
-     * Default: multiclient_sync::NONE
+     * @c AT_EACH_COMMIT synchronizes information right after a version has been committed, that is, after the 
+     * user executes @c Repository::commit().
+     *
+     * @c AT_EACH_ADD_OR_REMOVE synchronizes every time an application adds or removes an object from a 
+     * revision, i.e. after every @c Repository::add() or @c Repository::remove().
+     *
+     * Default: ClienSync::AT_EACH_COMMIT
      */
     struct ClientSync {
       enum Mode {
@@ -79,7 +84,10 @@ namespace versos
     /** For @c MPI coordinator class, this denotes the leader rank options for mpi coordination. Default: 0 */
     int mpi_leader_rank;
 
-    /** MPI communicator used by the @c MPI coordinator class. Default: -1 */
+    /**
+     * MPI communicator used by the @c MPI coordinator class. Assumes that the underlying type representing 
+     * communicators is an int. Default: -1
+     */
     MPI_Comm mpi_comm;
 
     Options()
@@ -89,7 +97,7 @@ namespace versos
 
       hash_seed = "";
       metadb_initialize_if_empty = false;
-      sync_mode = ClientSync::NONE;
+      sync_mode = ClientSync::AT_EACH_COMMIT;
 
       mpi_leader_rank = 0;
       mpi_comm = -1;

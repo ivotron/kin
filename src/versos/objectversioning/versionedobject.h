@@ -14,19 +14,27 @@ namespace versos
   class Repository;
 
   /**
-   * Versioned object abstraction.
+   * Versioned object abstraction. An implementation should be able to work properly by having only the three 
+   * members of this class (@c interfaceName, @c repositoryName and @c baseName) since these are the only 
+   * pieces of information stored in the reference database (i.e. the object metadata). Users always 
+   * instantiate implementation-specific objects prior to operating on them, that is, they can never get a 
+   * reference to an object that is contained in a @c Version. This is a design decision that allows to avoid 
+   * having to deal with implementation-specific issues as part of the @c versos library. This also means that 
+   * serializing an object effectively slices it, i.e. all the implementation-specific information is lost. 
+   * The assumption here being that the only reason why an object is being serialized is for metadata-handling 
+   * purposes and thus only the three base class' members should be enough to instantiate the object somewhere 
+   * else.
    *
-   * Since users interact directly with derived-specific methods, the implementation of these should check for 
-   * a version's state (status and special instances) in order to avoid issues. For example, a @c 
+   * Since users can interact directly with derived-specific methods, the implementation of these should check 
+   * for a version's state (status and special instances) in order to avoid issues. For example, a @c 
    * FooVersionedObject class implementing a method @c write(Version v, std::string value) should check that 
-   * the given version is valid (e.g. via the @c Version::isOK() method). The provided @c getId(Version) 
-   * actually makes this @c Version::isOK() check.
+   * the given version is valid, e.g. via the @c Version::isOK() method. The provided @c getId(Version) method 
+   * actually makes this @c Version::isOK() check before generating the ID of the object.
    */
   class VersionedObject : boost::noncopyable
   {
     friend class boost::serialization::access;
 
-    // note: this is not pure virtual so that it can be used in boost::ptr_container's
   protected:
     std::string interfaceName;
     std::string repoName;

@@ -53,7 +53,7 @@ namespace versos
 
     boost::ptr_set<VersionedObject>::iterator it;
 
-    for (it = parent.getObjects().begin(); it != parent.getObjects().end(); ++it)
+    for (it = getObjects(parent).begin(); it != getObjects(parent).end(); ++it)
     {
       if (it->create(parent, v))
       {
@@ -65,24 +65,24 @@ namespace versos
     return v;
   }
 
-  int SingleClientCoordinator::add(const Version& v, VersionedObject& o)
+  int SingleClientCoordinator::add(Version& v, VersionedObject& o)
   {
     // we add without checking what v's state is since Repository is doing all the checks
     return o.create(checkout(v.getParentId()), v);
   }
 
-  int SingleClientCoordinator::remove(const Version& v, VersionedObject& o)
+  int SingleClientCoordinator::remove(Version& v, VersionedObject& o)
   {
     // we remove without checking what v's state is since Repository is doing all the checks
     return o.remove(v);
   }
 
-  int SingleClientCoordinator::commit(const Version& v)
+  int SingleClientCoordinator::commit(Version& v)
   {
     // we commit without checking what v's state is since Repository is doing all the checks
     boost::ptr_set<VersionedObject>::iterator it;
 
-    for (it = v.getObjects().begin(); it != v.getObjects().end(); ++it)
+    for (it = getObjects(v).begin(); it != getObjects(v).end(); ++it)
       if (it->commit(v))
         return -22;
 

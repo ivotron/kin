@@ -25,6 +25,7 @@ namespace versos
   {
     friend class boost::serialization::access;
     friend class Repository;
+    friend class Coordinator;
   public:
     /**
      * ONLY_ONE is used only by the singleton NOT_FOUND and is used to 
@@ -53,9 +54,9 @@ namespace versos
     const std::string& getId() const;
 
     /**
-     * commits the staged objects.
+     * number of objects in this version.
      */
-    const boost::ptr_set<VersionedObject>& getObjects() const;
+    int size() const;
 
     /**
      * can I add/remove to this version?
@@ -97,6 +98,13 @@ namespace versos
      * commits the staged objects.
      */
     void setStatus(Status status);
+
+    /**
+     * objects that are part of this version.
+     *
+     * **NOTE**: only used by Coordinator
+     */
+    boost::ptr_set<VersionedObject>& getObjects();
 
   private:
     Version();

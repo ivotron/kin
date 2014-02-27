@@ -34,12 +34,12 @@ namespace versos
     return headId;
   };
 
-  Version& RefDB::create(const Version& parent, const std::string& msg)
+  Version& RefDB::create(const Version& parent, const std::string& hashSeed)
   {
     // get SHA1 for new child
     unsigned char childSHA1[20];
 
-    std::string d = parent.getId() + msg;
+    std::string d = parent.getId() + hashSeed;
 
     SHA1((const unsigned char*) d.c_str(), d.size(), childSHA1);
 

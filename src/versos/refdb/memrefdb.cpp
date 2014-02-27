@@ -32,8 +32,12 @@ namespace versos
   int MemRefDB::commit(const Version& v)
   {
     if (v.getParentId() != getHeadId())
-      // we only support sequential histories, thus if HEAD changed since the time @c v's was instantiated, 
-      // then committing would break the versioning sequence
+      // TODO: we only support sequential histories, thus if HEAD changed since the time @c v's was 
+      // instantiated, then committing would break the versioning sequence. This will change when we add 
+      // support for non-serializable histories (a.k.a. branching). This could possibly result in having a new 
+      // abstract method RefDB::makeHEAD() that operates separately from this commit() one, i.e. commit() 
+      // would just add to the db without checking if the given version is replacing becoming the head of the 
+      // repo.
       return -54;
 
     headId = v.getId();
@@ -62,6 +66,11 @@ namespace versos
   int MemRefDB::lock(const Version&, int)
   {
     return -53;
+  }
+
+  int MemRefDB::add(boost::shared_ptr<Version> v)
+  {
+    return own(v);
   }
 
   int MemRefDB::own(boost::shared_ptr<Version> v)

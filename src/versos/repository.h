@@ -6,10 +6,6 @@
 
 #include <string>
 
-// TODO: ifdef WITH_MPI_COORDINATOR
-#include <mpi.h>
-// TODO: endif
-
 namespace versos
 {
   class Coordinator;
@@ -18,6 +14,8 @@ namespace versos
 
   /**
    * The main interface for checking-out/creating versions.
+   *
+   * **NOTE**: not thread-safe.
    */
   class Repository
   {
@@ -91,6 +89,10 @@ namespace versos
     const std::string& getName() const;
 
     /**
+     * TODO: we can restrict the storage of objects to specific types by having a list of valid interface 
+     * names (eg. "rados", "rbd", "riak", etc.) that the @c Repository class checks before operating on an 
+     * object.
+     *
      * TODO: currently, every time a coordinator commits, the associated version becomes the HEAD of the repo. 
      * We would like to be more flexible and support:
      *
@@ -158,9 +160,9 @@ namespace versos
      *   30-39 : radosobj
      *   40-49 : memobj
      *   50-59 : memrefdb
-     *   60-69 : mpicoord
-     *   70-79 : versionedobject
+     *   60-79 : mpicoord
      *   80-89 : refdb
+     *   90-99 : versionedobject
      *
      * TODO: four options of operation for client-coordinated optimistic mod based on the following:
      *   - synchronization of object metadata has to be done synchronously/async before the commit is 

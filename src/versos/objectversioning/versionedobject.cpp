@@ -34,13 +34,13 @@ namespace versos
   int VersionedObject::getId(const Version& v, std::string& id) const
   {
     if (!v.isOK())
-      return -70;
+      return -90;
 
     if (!v.contains(*this))
       // TODO: if this check becomes expensive, we can add an option to trust the user. This means that a user 
       // won't operate inconsistently in terms of intra-transaction object metadata operations, eg. remove an 
       // object and then read/write to it
-      return -71;
+      return -91;
 
     // TODO: maintain a cache of generated ids, so that we don't have this concatenation overhead
     id = interfaceName + "_" + repoName + "_" + baseName + "_" + to_str(v.getId());

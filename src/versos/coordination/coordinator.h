@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include <boost/ptr_container/ptr_set.hpp>
+
 namespace versos
 {
   class Version;
@@ -16,6 +18,11 @@ namespace versos
   {
   public:
     virtual ~Coordinator() {}
+
+    /**
+     * open the db
+     */
+    //virtual int openMetaDB() const = 0;
 
     /**
      * retrieves the id of the latest committed version.
@@ -44,7 +51,7 @@ namespace versos
      * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
      * etc..), since @c Version should have done this check already.
      */
-    virtual int add(const Version& v, VersionedObject& o) = 0;
+    virtual int add(Version& v, VersionedObject& o) = 0;
 
     /**
      * removes an object from a version
@@ -52,7 +59,7 @@ namespace versos
      * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
      * etc..), since @c Version should have done this check already.
      */
-    virtual int remove(const Version& v, VersionedObject& o) = 0;
+    virtual int remove(Version& v, VersionedObject& o) = 0;
 
     /**
      * commits.
@@ -60,7 +67,7 @@ namespace versos
      * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
      * etc..), since @c Version should have done this check already.
      */
-    virtual int commit(const Version& v) = 0;
+    virtual int commit(Version& v) = 0;
 
     /**
      * initializes an empty repo. fails if non-empty.
@@ -78,6 +85,13 @@ namespace versos
      * shuts down. No more operations can be done after this is invoked.
      */
     virtual int shutdown() = 0;
+
+  protected:
+    /**
+     * Access the internal set of a version. This is kind of a hack to overcome the restriction of not 
+     * inheriting friendship (Coordinator is a friend of Version).
+     */
+    static boost::ptr_set<VersionedObject>& getObjects(Version& v);
   };
 }
 

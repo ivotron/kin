@@ -30,9 +30,9 @@ namespace versos
     int getHeadId(std::string& id);
     const Version& checkout(const std::string& id);
     Version& create(const Version& parent);
-    int add(const Version& v, VersionedObject& o);
-    int remove(const Version& v, VersionedObject& o);
-    int commit(const Version& v);
+    int add(Version& v, VersionedObject& o);
+    int remove(Version& v, VersionedObject& o);
+    int commit(Version& v);
     int initRepository();
     bool isRepositoryEmpty();
     int shutdown();

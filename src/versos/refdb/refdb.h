@@ -19,7 +19,7 @@ namespace versos
   public:
     RefDB(const std::string& repoName);
     virtual ~RefDB();
-    virtual Version& create(const Version&, const std::string& msg);
+    virtual Version& create(const Version&, const std::string& hashSeed);
     virtual const std::string& getHeadId() const;
 
     /**
@@ -43,7 +43,7 @@ namespace versos
     virtual bool isEmpty() const = 0;
 
     /**
-     * marks the given version as committed.
+     * marks the given version as committed. Fails if parent is not the head.
      */
     virtual int commit(const Version& v) = 0;
 

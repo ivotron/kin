@@ -17,8 +17,14 @@ namespace versos
     else
       throw std::runtime_error("unknown metadb class");
 
+    // TODO: move this to the coordinator, since the coordinator is the one that owns the responsibility of 
+    // talking to the DB
+    // {
+    refdb->open();
+
     if (o.metadb_initialize_if_empty == true && refdb->isEmpty() && refdb->init())
       throw std::runtime_error("refdb.init");
+    // }
 
     if (o.coordinator_type == Options::Coordinator::SINGLE_CLIENT)
       coordinator = new SingleClientCoordinator(*refdb, o);
