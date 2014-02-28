@@ -9,19 +9,19 @@ namespace versos
 
   RadosVersionedObject::RadosVersionedObject(
         librados::IoCtx& ctx, const std::string& repoName, const std::string& baseName) :
-    VersionedObject("rados", repoName, baseName), ioctx(ctx)
+    VersionedObject("rados", repoName, baseName, VERIFY_CONTAINMENT), ioctx(ctx)
   {
   }
 
   RadosVersionedObject::RadosVersionedObject(
         librados::IoCtx& ctx, const Repository& repo, const std::string& baseName) :
-    VersionedObject("rados", repo, baseName), ioctx(ctx)
+    VersionedObject("rados", repo, baseName, VERIFY_CONTAINMENT), ioctx(ctx)
   {
   }
 
   RadosVersionedObject::RadosVersionedObject(
         librados::IoCtx& ctx, const Repository& repo, const char* baseName) :
-    VersionedObject("rados", repo, std::string(baseName)), ioctx(ctx)
+    VersionedObject("rados", repo, std::string(baseName), VERIFY_CONTAINMENT), ioctx(ctx)
   {
   }
   RadosVersionedObject::~RadosVersionedObject()

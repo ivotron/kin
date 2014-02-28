@@ -92,6 +92,7 @@ namespace versos
      * inheriting friendship (Coordinator is a friend of Version).
      */
     static boost::ptr_set<VersionedObject>& getObjects(Version& v);
+    static const boost::ptr_set<VersionedObject>& getObjects(const Version& v);
   };
 }
 

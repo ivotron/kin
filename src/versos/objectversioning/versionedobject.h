@@ -5,8 +5,11 @@
 #include <sstream>
 #include <string>
 
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/serialization/access.hpp>
+#include <boost/serialization/export.hpp>
 
 namespace versos
 {
@@ -35,16 +38,20 @@ namespace versos
   {
     friend class boost::serialization::access;
 
+  public:
+    enum ContainmentVerification { VERIFY_CONTAINMENT, DONT_VERIFY_CONTAINMENT };
+
   protected:
     std::string interfaceName;
     std::string repoName;
     std::string baseName;
+    ContainmentVerification checkForContainment;
 
   public:
-    VersionedObject(const std::string& interfaceName, const Repository& repo, const std::string& baseName);
+    VersionedObject(const std::string& interfaceName, const Repository& repo, const std::string& baseName, 
+        ContainmentVerification check);
     VersionedObject(const std::string& interfaceName, const std::string& repoName, const std::string& 
-        baseName);
-
+        baseName, ContainmentVerification check);
     virtual ~VersionedObject();
 
     /**
@@ -101,5 +108,6 @@ namespace versos
   bool operator==( const VersionedObject& l, const VersionedObject& r );
 
   bool operator<( const VersionedObject& l, const VersionedObject& r );
+
 }
 #endif

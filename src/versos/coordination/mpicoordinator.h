@@ -22,7 +22,7 @@ namespace versos
     int myRank;
     Options::ClientSync::Mode syncMode;
     MemRefDB localRefDB;
-    int size;
+    int commSize;
   public:
     MpiCoordinator(RefDB& refdb, const Options& o);
 
@@ -74,7 +74,7 @@ namespace versos
 
     /**
      */
-    void waitForAll() const;
+    void barrier() const;
     // }
 
   private:

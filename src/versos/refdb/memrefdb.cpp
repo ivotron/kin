@@ -76,7 +76,7 @@ namespace versos
   int MemRefDB::own(boost::shared_ptr<Version> v)
   {
     if (revisions.find(v->getId()) != revisions.end())
-      // re-adding an already-added version; or (very unlikely) there is a SHA1 collision
+      // re-adding an already-added version; or (very unlikely) there is a hash collision
       return -56;
 
     revisions[v->getId()] = v;

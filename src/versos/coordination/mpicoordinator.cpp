@@ -8,8 +8,8 @@
 #include <stdexcept>
 #include <vector>
 
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 #include <boost/ptr_container/ptr_set.hpp>
 #include <boost/ptr_container/serialize_ptr_set.hpp>
 #include <boost/serialization/serialization.hpp>
@@ -17,31 +17,32 @@
 /* high-level description of the implementation:
  *
  * Every rank has an instance of an in-memory meta DB (localRefDB) which is kept synchronized with the actual 
- * refdb at the backend. There is one leader rank that contacts the refdb at the backend and propagates the 
- * info to other ranks. The points of synchronization are:
+ * refdb at the backend. This is mainly used to manage memory allocation and mapping of version IDs to @c 
+ * Version class instances.
  *
- *   1. coordinator instantiation: the local metadb's are synchronized to determine the HEAD and its contents.
- *   2. A new version is created
- *   3. A version is checked out
- *   4. A version is committed (only if syncMode == Options::ClientSync::AT_EACH_COMMIT)
- *   5. An object is removed/added (only if syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
+ * There is one leader rank that contacts the refdb at the backend and propagates the info to the other ranks. 
+ * The info propagated is the parent-child relationship of versions as well as their IDs. Depending on the 
+ * synchronization mode, the metadata about the objects contained in a version might also be synchronized. The 
+ * points of synchronization are:
  *
- * TODO: currently, the NONE syncMode will actually store metadata about the objects added to the leader rank. 
- * This is because the leader's local in-memory db is not used at all, instead it relies on using the 
- * SingleClientCoordinator's one. Conversely, other-than-leader ranks don't use the SingleClientCoordinator's 
- * memdb at all (because only the leader contacts it). So in order to resolve this, we have to have the leader 
- * use its in-memory db just as the other ranks do.
+ *   1. A version is checked out (object metadata synchronized only if syncMode != NONE)
+ *   2. An object is removed/added (object metadata synchronized only if syncMode == AT_EACH_ADD_OR_REMOVE)
+ *   3. A version is committed (object metadata synchronized only if syncMode == AT_EACH_COMMIT)
  *
- * TODO: regardless of the above, currently there is no way of identifying conflicts w.r.t. distinct 
- * syncMode's used and the actual contents of a version. For example, an instance of the mpi coordinator might 
- * have operated in Options::ClientSync::NONE mode and committed some versions, thus no object-containment 
- * information would get stored. If a subsequent instance is instantiated with 
- * Options::ClientSync::AT_EACH_COMMIT and tries to checkout one of the versions of the previous run, the 
- * version will be "empty" from the object-containment point of view, even though the previous run actually 
- * has objects stored whose metadata is stored everywhere. There are several alternatives to this. A simple 
- * one is to store the sync mode in the RefDB along with each version. When a version is checked out, the 
- * coordinator looks at this and can either fail or take a proactive approach and resolve the syncMode 
- * conflict.
+ * TODO: currently there is no way of identifying conflicts w.r.t. distinct syncMode's used and the actual 
+ * contents of a version. For example, an instance of the mpi coordinator might have operated in NONE mode and 
+ * committed some versions, thus no object-containment information would have been stored. If a subsequent 
+ * instance is instantiated with AT_EACH_COMMIT and tries to checkout one of the versions of the previous run, 
+ * the version will be "empty" from the object-containment point of view, even though the previous run 
+ * actually has objects stored whose metadata is managed externally by an app. There are several alternatives 
+ * to this. A simple one is to store the sync mode in the RefDB along with each version. When a version is 
+ * checked out, the coordinator looks at this, compares against the mode that it was instantiated with and can 
+ * either fail or take a proactive approach in order to resolve any possible syncMode conflict.
+ *
+ * TODO: currently, there is a restriction that only allows to add the same number of objects at each rank per 
+ * transaction (due to Allgather's requirement)
+ *
+ * TODO: optimize object syncing by sending only the deltas (additions and removals)
  */
 
 namespace versos
@@ -70,13 +71,13 @@ namespace versos
     if (comm == MPI_COMM_NULL || comm == -1)
       throw std::runtime_error("MPI comm is NULL");
 
-    if(MPI_Comm_size(comm, &size))
+    if(MPI_Comm_size(comm, &commSize))
       throw std::runtime_error("unable to get size of MPI comm");
 
     if (leaderRank < 0)
       throw std::runtime_error("leader rank should be positive");
 
-    if (leaderRank > (size - 1))
+    if (leaderRank > (commSize - 1))
       throw std::runtime_error("leader rank shouldn't be greater than size of MPI communicator");
 
     if(MPI_Comm_rank(comm, &myRank))
@@ -85,17 +86,6 @@ namespace versos
     // TODO:
     //   - openDB()
     //   - initDB()
-
-    std::string headId;
-
-    if (imLeader())
-      if (SingleClientCoordinator::getHeadId(headId))
-        throw std::runtime_error("unable to get HEAD id");
-
-    broadcast(headId);
-
-    if (!checkout(headId).isOK())
-      throw std::runtime_error("unable to synchronize HEAD");
   }
 
   MpiCoordinator::~MpiCoordinator()
@@ -115,56 +105,63 @@ namespace versos
 
   const Version& MpiCoordinator::checkout(const std::string& id)
   {
-    const Version* v;
+    // check if locally available
+    {
+      const Version& localV = localRefDB.checkout(id);
+
+      if (localV.isOK())
+        return localV;
+    }
+
     std::string parentId;
     boost::ptr_set<VersionedObject> objects;
 
-    // TODO: check if version is in localRefDB first
-
-    if (imLeader())
+    // ask for the version contents to leader
     {
-      v = &SingleClientCoordinator::checkout(id);
+      if (imLeader())
+      {
+        const Version& leaderV = SingleClientCoordinator::checkout(id);
 
-      if (!v->isOK())
-        handleError(-61);
+        if (!leaderV.isOK())
+          handleError(-61);
 
-      parentId = v->getParentId();
-      objects = getObjects(*(Version*)v);
+        parentId = leaderV.getParentId();
+
+        if (syncMode != Options::ClientSync::NONE)
+          objects = getObjects(leaderV);
+      }
+
+      broadcast(parentId);
+      broadcast(objects);
     }
 
-    broadcast(parentId);
-    broadcast(objects);
-
-    if (!imLeader())
+    // add it to the local db
     {
-      v = new Version(id, parentId, objects);
+      Version* v = new Version(id, parentId, objects);
 
-      if (localRefDB.add(boost::shared_ptr<Version>((Version *)v)))
-        handleError(-62);
+      // add to local db
+      int ret = localRefDB.add(boost::shared_ptr<Version>(v));
+
+      if (ret)
+        handleError(ret);
+
+      return *v;
     }
-
-    return *v;
   }
 
   Version& MpiCoordinator::create(const Version& parent)
   {
-    Version* v;
+    // parent should be in local DB (must have been checked-out or created)
+    if (!localRefDB.checkout(parent.getId()).isOK())
+      handleError(-63);
 
-    if (imLeader())
-    {
-      v = &SingleClientCoordinator::create(parent);
+    // since parent is here, we don't need to contact the leader
+    Version& newVersion = localRefDB.create(parent, hashSeed);
 
-      if (!v->isOK())
-        handleError(-63);
-    }
-    else
-    {
-      v = &localRefDB.create(parent, hashSeed);
-    }
+    if (syncMode == Options::ClientSync::NONE)
+      getObjects(newVersion).clear();
 
-    broadcast(getObjects(*v));
-
-    return *v;
+    return newVersion;
   }
 
   int MpiCoordinator::add(Version& v, VersionedObject& o)
@@ -172,7 +169,9 @@ namespace versos
     if (SingleClientCoordinator::add(v, o))
       handleError(-65);
 
-    if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
+    if (syncMode == Options::ClientSync::NONE)
+      getObjects(v).clear();
+    else if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
       allGather(getObjects(v));
 
     return 0;
@@ -191,21 +190,20 @@ namespace versos
 
   int MpiCoordinator::commit(Version& v)
   {
-    if (syncMode == Options::ClientSync::AT_EACH_COMMIT ||
-        syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
+    if (syncMode == Options::ClientSync::AT_EACH_COMMIT)
       allGather(getObjects(v));
 
     int ret = 0;
 
     if (imLeader())
+    {
       ret = SingleClientCoordinator::commit(v);
-    else
-      ret = localRefDB.commit(v);
 
-    if (ret)
-      handleError(ret);
+      if (ret)
+        handleError(ret);
+    }
 
-    waitForAll();
+    barrier();
 
     return 0;
   }
@@ -249,7 +247,7 @@ namespace versos
     MPI_Abort(comm, code);
   }
 
-  void MpiCoordinator::waitForAll() const
+  void MpiCoordinator::barrier() const
   {
     if(MPI_Barrier(comm))
       MPI_Abort(comm, -67);
@@ -263,21 +261,27 @@ namespace versos
 
   void MpiCoordinator::broadcast(std::string& id) const
   {
-    std::vector<char> id_vec(40);
+    char* raw;
 
     if (imLeader())
-      id_vec = std::vector<char>(id.begin(), id.end());
+      raw = (char*) id.c_str();
+    else
+      raw = new char[41];
 
-    id_vec.push_back('\0');
-
-    if (MPI_Bcast(&id_vec[0], 40, MPI_CHAR, leaderRank, comm))
+    if (MPI_Bcast(raw, 41, MPI_CHAR, leaderRank, comm))
       MPI_Abort(comm, -69);
 
-    id = &id_vec[0];
+    id = std::string(raw);
+
+    if (!imLeader())
+      delete raw;
   }
 
   void MpiCoordinator::broadcast(boost::ptr_set<VersionedObject>& objects) const
   {
+    if (objects.size() == 0)
+      return;
+
     unsigned int numBytes;
     char* raw;
 
@@ -285,11 +289,11 @@ namespace versos
     {
       // serialize objects
       std::stringstream ss;
-      boost::archive::binary_oarchive oarch(ss);
+      boost::archive::text_oarchive oarch(ss);
       oarch << objects;
 
       numBytes = ss.str().size();
-      raw = (char *) ss.str().c_str();
+      raw = const_cast<char*>(ss.str().data()); // OK to cast, we won't write to it
     }
 
     // send/receive chunk size
@@ -304,40 +308,62 @@ namespace versos
     {
       // de-serialize it
       std::stringstream ss(raw);
-      boost::archive::binary_iarchive iarch(ss);
+      boost::archive::text_iarchive iarch(ss);
       iarch >> objects;
     }
   }
 
   void MpiCoordinator::allGather(boost::ptr_set<VersionedObject>& objects) const
   {
-    // serialize the local objects
-    std::stringstream ssLocal;
-    boost::archive::binary_oarchive oarch(ssLocal);
-    oarch << objects;
+    // get the total number of objects across all ranks
+    int localNumObjects = objects.size();
+    int globalNumObjects;
 
-    // get the total number of bytes across all ranks
-    int localNumBytes = ssLocal.str().size();
-    int globalNumBytes;
-
-    if (MPI_Allreduce(&localNumBytes, &globalNumBytes, 1, MPI_INT, MPI_SUM, comm))
+    if (MPI_Allreduce(&localNumObjects, &globalNumObjects, 1, MPI_INT, MPI_SUM, comm))
       MPI_Abort(comm, -72);
 
-    // send/receive the whole chunk containing all sets
-    char* localBytes = (char*) ssLocal.str().c_str();
-    char globalBytes[globalNumBytes];
-
-    if (MPI_Allgather(localBytes, localNumBytes, MPI_CHAR, globalBytes, globalNumBytes, MPI_CHAR, comm))
+    if (globalNumObjects != (commSize * localNumObjects))
       MPI_Abort(comm, -73);
+
+    // serialize the local objects
+    std::stringstream ssLocal;
+    try
+    {
+      boost::archive::text_oarchive oarch(ssLocal);
+      oarch << objects;
+    }
+    catch (...)
+    {
+      MPI_Abort(comm, -76);
+    }
+
+    // send the local chunk/receive the whole chunk containing all sets
+    std::string strL = ssLocal.str();
+    int localNumBytes = strL.size();
+    char* localBytes = const_cast<char*>(strL.data()); // OK to cast, we won't write to it
+    char globalBytes[localNumBytes * commSize];
+
+    if (MPI_Allgather(localBytes, localNumBytes, MPI_CHAR, globalBytes, localNumBytes, MPI_CHAR, comm))
+      MPI_Abort(comm, -74);
 
     std::stringstream ssGlobal(globalBytes);
 
+    objects.clear();
+
     // de-serialize, one set at a time (one set per rank)
-    for (int i = 0; i < size; ++i)
+    for (int i = 0; i < commSize; ++i)
     {
       boost::ptr_set<VersionedObject> objectsForRank;
-      boost::archive::binary_iarchive iarch(ssGlobal);
-      iarch >> objectsForRank;
+
+      try
+      {
+        boost::archive::text_iarchive iarch(ssGlobal);
+        iarch >> objectsForRank;
+      }
+      catch (...)
+      {
+        MPI_Abort(comm, -75);
+      }
 
       objects.insert(objectsForRank);
     }

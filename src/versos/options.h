@@ -59,7 +59,7 @@ namespace versos
      * objects being modified by each).
      *
      * @c NONE doesn't share any information. This is useful for applications that "know what they're doing", 
-     * which implies that s/he is responsible for managing object-in-version containment metadata. In other 
+     * which implies that user is responsible for managing object-in-version containment metadata. In other 
      * words, the refdb only stores the parent-child relationship of versions but not of what each version 
      * contains.
      *
@@ -69,7 +69,7 @@ namespace versos
      * @c AT_EACH_ADD_OR_REMOVE synchronizes every time an application adds or removes an object from a 
      * revision, i.e. after every @c Repository::add() or @c Repository::remove().
      *
-     * Default: ClienSync::AT_EACH_COMMIT
+     * Default: @c ClienSync::AT_EACH_COMMIT
      */
     struct ClientSync {
       enum Mode {

@@ -8,4 +8,8 @@ namespace versos
   {
     return v.getObjects();
   }
+  const boost::ptr_set<VersionedObject>& Coordinator::getObjects(const Version& v)
+  {
+    return v.getObjectsConst();
+  }
 }

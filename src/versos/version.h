@@ -56,7 +56,7 @@ namespace versos
     /**
      * number of objects in this version.
      */
-    int size() const;
+    unsigned int size() const;
 
     /**
      * can I add/remove to this version?
@@ -105,6 +105,7 @@ namespace versos
      * **NOTE**: only used by Coordinator
      */
     boost::ptr_set<VersionedObject>& getObjects();
+    const boost::ptr_set<VersionedObject>& getObjectsConst() const;
 
   private:
     Version();

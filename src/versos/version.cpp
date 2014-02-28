@@ -96,7 +96,7 @@ namespace versos
     return id;
   }
 
-  int Version::size() const
+  unsigned int Version::size() const
   {
     return objects.size();
   }
@@ -106,10 +106,17 @@ namespace versos
     return objects;
   }
 
+  const boost::ptr_set<VersionedObject>& Version::getObjectsConst() const
+  {
+    return objects;
+  }
+
   bool Version::operator== (const Version& other) const
   {
     if (this->getId() == other.getId())
       return true;
+
+    // TODO: check parent and objects too
 
     return false;
   }

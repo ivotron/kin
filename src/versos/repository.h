@@ -69,6 +69,7 @@ namespace versos
      * Adds an object to the given version. Fails if version is read only.
      */
     int add(Version& v, VersionedObject& o);
+    // TODO: add(Version& v, set<VersionedObject> objects);
 
     /**
      * removes an object.

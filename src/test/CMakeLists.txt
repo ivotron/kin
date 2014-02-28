@@ -33,6 +33,8 @@ ADD_SUBDIRECTORY (gmock)
 INCLUDE_DIRECTORIES ("gmock/include")
 INCLUDE_DIRECTORIES ("gmock/gtest/include")
 
+SET (GTEST_FLAGS "--gtest_break_on_failure")
+
 SET (DEP_LIBRARIES gtest gtest_main gmock gmock_main ${OPENSSL_LIBRARIES})
 
 IF (ENABLE_MPI_COORDINATOR)
@@ -50,14 +52,14 @@ ENDMACRO ()
 
 MACRO (BUILD_AND_ADD_TEST bin_name src_name)
   BUILD_TEST(${bin_name} ${src_name})
-  ADD_TEST(${bin_name} ${bin_name})
+  ADD_TEST(${bin_name} ${bin_name} ${GTEST_FLAG})
 ENDMACRO()
 
 IF (ENABLE_MPI_COORDINATOR)
 
   MACRO (ADD_MPI_TEST test_name np)
     ADD_TEST (NAME ${test_name}_${np} COMMAND ${MPIEXEC} ${MPIEXEC_PREFLAGS}
-          ${MPIEXEC_NUMPROC_FLAG} ${np} ${MPIEXEC_POSTFLAGS} $<TARGET_FILE:${test_name}>)
+          ${MPIEXEC_NUMPROC_FLAG} ${np} ${MPIEXEC_POSTFLAGS} $<TARGET_FILE:${test_name}> ${GTEST_FLAG})
   ENDMACRO ()
 
   MACRO (BUILD_AND_ADD_MPI_TEST bin_name src_name np_vararg)

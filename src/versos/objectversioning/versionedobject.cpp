@@ -3,6 +3,9 @@
 #include "versos/version.h"
 #include "versos/repository.h"
 
+BOOST_CLASS_EXPORT_KEY(versos::VersionedObject);
+BOOST_CLASS_EXPORT_IMPLEMENT(versos::VersionedObject);
+
 namespace versos
 {
   /**
@@ -16,14 +19,26 @@ namespace versos
   }
 
   VersionedObject::VersionedObject(
-      const std::string& interfaceName, const std::string& repoName, const std::string& baseName) :
-    interfaceName(interfaceName), repoName(repoName), baseName(baseName)
+      const std::string& interfaceName,
+      const std::string& repoName,
+      const std::string& baseName,
+      ContainmentVerification check) :
+    interfaceName(interfaceName),
+    repoName(repoName),
+    baseName(baseName),
+    checkForContainment(check)
   {
   }
 
   VersionedObject::VersionedObject(
-      const std::string& interfaceName, const Repository& repo, const std::string& baseName) :
-    interfaceName(interfaceName), repoName(repo.getName()), baseName(baseName)
+      const std::string& interfaceName,
+      const Repository& repo,
+      const std::string& baseName,
+      ContainmentVerification check) :
+    interfaceName(interfaceName),
+    repoName(repo.getName()),
+    baseName(baseName),
+    checkForContainment(check)
   {
   }
 
@@ -36,7 +51,7 @@ namespace versos
     if (!v.isOK())
       return -90;
 
-    if (!v.contains(*this))
+    if (checkForContainment == VERIFY_CONTAINMENT && !v.contains(*this))
       // TODO: if this check becomes expensive, we can add an option to trust the user. This means that a user 
       // won't operate inconsistently in terms of intra-transaction object metadata operations, eg. remove an 
       // object and then read/write to it
