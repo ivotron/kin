@@ -15,7 +15,7 @@ namespace versos
   /**
    * The main interface for checking-out/creating versions.
    *
-   * **NOTE**: not thread-safe.
+   * **NOTE**: not thread-safe (user should instantiate another ::Repository object instead).
    */
   class Repository
   {
@@ -77,7 +77,9 @@ namespace versos
     int remove(Version& v, VersionedObject& o);
 
     /**
-     * removes an object.
+     * commits a version. TODO: currently it also updates the HEAD but this will change when we add support 
+     * for push(). In other words, commit() should just commit, whereas push() should take care of updating 
+     * HEAD and reporting about conflicts.
      */
     int commit(Version& v);
 

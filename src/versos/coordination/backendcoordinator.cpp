@@ -1,64 +1,112 @@
-#include "versos/coordination/mpicoordinator.h"
+#include "versos/coordination/backendcoordinator.h"
+
+#include "versos/version.h"
+#include "versos/objectversioning/versionedobject.h"
+#include "versos/refdb/refdb.h"
 
 namespace versos
 {
-  /**
-   *  - there is an object (per repo, per revision) that serves as a locker
-   *  - we make sure that every rank holds the same revision ID
-   *  - using the shared revision ID, every rank places a shared lock on the locker
-   *  - every rank writes to objects inside the revision in question
-   *  - after a rank is finished adding/modifying a revision, it releases the lock
-   *  - it's possible to query the locker to get the number of locks
-   *  - a server-side daemon periodically checks this and commits when the lock count gets to zero.
-   */
+  // TODO: currently not fault-tolerant (what if a client dies?)
 
-  MpiCoordinator::MpiCoordinator() : leaderRank(-1), comm(MPI_COMM_NULL)
+  BackendCoordinator::BackendCoordinator(RefDB& refdb, const Options& o) :
+    SingleClientCoordinator(refdb, o), syncMode(o.sync_mode)
+  {
+    init();
+  }
+
+  BackendCoordinator::BackendCoordinator(
+      RefDB& refdb, Options::ClientSync::Mode syncMode, const std::string& hashSeed) : 
+    SingleClientCoordinator(refdb, hashSeed), syncMode(syncMode)
+  {
+    init();
+  }
+
+  BackendCoordinator::BackendCoordinator(RefDB& refdb) : SingleClientCoordinator(refdb, "backend")
+  {
+    init();
+  }
+
+  BackendCoordinator::~BackendCoordinator()
   {
   }
 
-  MpiCoordinator::MpiCoordinator(MPI_Comm comm, int leaderRank) : leaderRank(leaderRank), comm(comm)
+  void BackendCoordinator::init()
   {
+    // TODO:
+    //   - openDB()
+    //   - initDB()
   }
 
-  int MpiCoordinator::getHeadId(uint64_t& head)
+  Version& BackendCoordinator::create(const Version& parent)
   {
+    Version& newVersion = refdb.create(parent, hashSeed, RefDB::SHARED_LOCK, hashSeed);
+
+    if (syncMode == Options::ClientSync::NONE)
+      getObjects(newVersion).clear();
+
+    return newVersion;
+  }
+
+  int BackendCoordinator::add(Version& v, VersionedObject& o)
+  {
+    if (SingleClientCoordinator::add(v, o))
+      return -65;
+
+    if (syncMode == Options::ClientSync::NONE)
+      getObjects(v).clear();
+    else if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
+      return refdb.add(v, o);
+
     return 0;
   }
 
-  Version& MpiCoordinator::checkout(uint64_t id)
+  int BackendCoordinator::remove(Version& v, VersionedObject& o)
   {
+    if (SingleClientCoordinator::remove(v, o))
+      return -66;
+
+    if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
+      return refdb.add(v, o);
+
+    return 0;
   }
 
-  Version& MpiCoordinator::create(const Version& parent)
+  int BackendCoordinator::commit(Version& v)
   {
+    int ret;
+
+    if (syncMode == Options::ClientSync::AT_EACH_COMMIT)
+    {
+      // TODO: get the diff set<Obj> added; set<Obj> removed
+      ret = refdb.addAll(v);
+
+      if (ret < 0)
+        return -109;
+      else if ((unsigned) ret != v.size())
+        return -108;
+    }
+
+    ret = refdb.commit(v);
+
+    if (ret == 0)
+    {
+      // 1. Get all objects, instantiate them and then:
+      //
+      // for (o = getObjects(v).begin(); o != getObjects(v).end(); ++o)
+      //   if (o->commit(v))
+      //     return -22;
+
+      // "exec SET repoName_versionId_status 'committed'"
+
+      // add to local set<v_id> isCompleted to signal completion
+    }
+
+    return 0;
   }
 
-  int MpiCoordinator::add(const Version& v, const VersionedObject& o)
+  int BackendCoordinator::makeHEAD(const Version& v)
   {
-  }
-
-  int MpiCoordinator::remove(const Version& v, const VersionedObject& o)
-  {
-  }
-
-  int MpiCoordinator::commit(const Version& v)
-  {
-    // simple:
-    //
-    // 1. get the objects that each client has added
-    // 2. write that to the metadata object
-    // 3. loop on each object and create a snapshot
-    // 4. return
-    //
-    // complex:
-    //
-    // 1. retrieve the diff in terms of object removal/deletion of each client
-    // 2. for each new object, add it to the metadata object
-  }
-
-  Coordinator* MpiCoordinator::clone() const
-  {
-    return new MpiCoordinator(comm, leaderRank);
+    // TODO: if (isCompleted(v))
+    return refdb.makeHEAD(v);
   }
 }
-

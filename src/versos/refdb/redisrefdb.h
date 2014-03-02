@@ -1,31 +1,35 @@
-#ifndef MEMREFDB_H
-#define MEMREFDB_H
+#ifndef REDISREFDB_H
+#define REDISREFDB_H
 
-#include "versos/refdb/refdb.h"
+#include "versos/refdb/memrefdb.h"
+#include "versos/refdb/rediswrapper.h"
 
 #include <map>
 
 namespace versos
 {
-  class MemRefDB : public RefDB
+  struct Options;
+
+  class RedisRefDB : public MemRefDB
   {
   private:
-    std::map<std::string, boost::shared_ptr<Version> > revisions;
-  public:
-    MemRefDB(const std::string& repoName);
-    virtual ~MemRefDB();
+    std::string host;
+    redis::DB redisdb;
 
-    /**
-     * adds a version without changing the HEAD (like @c commit() but without the check and HEAD change).
-     */
-    int add(boost::shared_ptr<Version> v);
+  public:
+    RedisRefDB(const std::string& repoName, const Options& o);
+    virtual ~RedisRefDB();
 
     // inherited
     int open();
     int close();
     bool isEmpty() const;
-    int commit(const Version& v);
     int makeHEAD(const Version& v);
+
+    /**
+     * decreases the shared lock count and returns the new value.
+     */
+    int commit(const Version& v);
     const Version& checkout(const std::string& id);
     int remove(const Version& v);
     int addAll(const Version& v);
@@ -36,3 +40,4 @@ namespace versos
   };
 }
 #endif
+

@@ -1,6 +1,7 @@
 #include "versos/refdb/refdb.h"
 
 #include "versos/version.h"
+#include "versos/objectversioning/versionedobject.h"
 
 #include <sstream>
 #include <iomanip>
@@ -36,6 +37,12 @@ namespace versos
 
   Version& RefDB::create(const Version& parent, const std::string& hashSeed)
   {
+    return create(parent, hashSeed, EXCLUSIVE_LOCK, "");
+  }
+
+  Version& RefDB::create(
+      const Version& parent, const std::string& hashSeed, LockType lock, const std::string& lockKey)
+  {
     // get SHA1 for new child
     unsigned char childSHA1[20];
 
@@ -53,9 +60,14 @@ namespace versos
     // instantiate
     boost::shared_ptr<Version> v(new Version(ss.str(), parent));
 
-    if (own(v))
+    if (own(v, lock, lockKey))
       return Version::ERROR;
 
     return *v;
+  }
+
+  int RefDB::own(boost::shared_ptr<Version> v)
+  {
+    return own(v, EXCLUSIVE_LOCK, "");
   }
 }

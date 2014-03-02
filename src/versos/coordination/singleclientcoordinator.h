@@ -20,7 +20,6 @@ namespace versos
     RefDB& refdb;
     std::string hashSeed;
   public:
-    SingleClientCoordinator(const SingleClientCoordinator& copy);
     SingleClientCoordinator(RefDB& refdb, const Options& o);
     SingleClientCoordinator(RefDB& refdb);
     SingleClientCoordinator(RefDB& refdb, const std::string& hashSeed);
@@ -32,7 +31,8 @@ namespace versos
     Version& create(const Version& parent);
     int add(Version& v, VersionedObject& o);
     int remove(Version& v, VersionedObject& o);
-    int commit(Version& v);
+    int commit(const Version& v);
+    int makeHEAD(const Version& v);
     int initRepository();
     bool isRepositoryEmpty();
     int shutdown();

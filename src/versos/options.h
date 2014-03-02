@@ -43,6 +43,11 @@ namespace versos
     MetaDB::Type metadb_type;
 
     /**
+     * address of the metadb server, for remote-based implementations. Default: ""
+     */
+    std::string metadb_server_address;
+
+    /**
      * whether to initialize the metadb if empty. Default: false.
      */
     bool metadb_initialize_if_empty;
@@ -93,11 +98,13 @@ namespace versos
     Options()
     {
       coordinator_type = Coordinator::SINGLE_CLIENT;
+      sync_mode = ClientSync::AT_EACH_COMMIT;
+
       metadb_type = MetaDB::MEM;
+      metadb_server_address = "";
+      metadb_initialize_if_empty = false;
 
       hash_seed = "";
-      metadb_initialize_if_empty = false;
-      sync_mode = ClientSync::AT_EACH_COMMIT;
 
       mpi_leader_rank = 0;
       mpi_comm = -1;

@@ -31,10 +31,10 @@ namespace versos
   {
   }
 
-  Version::Version(const Version& copy) :
-    id(copy.id), parentId(copy.parentId), status(copy.status), objects(copy.objects)
-  {
-  }
+  //Version::Version(const Version& copy) :
+    //id(copy.id), parentId(copy.parentId), status(copy.status), objects(copy.objects)
+  //{
+  //}
 
   Version::~Version()
   {

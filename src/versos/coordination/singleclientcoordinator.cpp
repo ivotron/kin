@@ -23,11 +23,6 @@ namespace versos
   {
   }
 
-  SingleClientCoordinator::SingleClientCoordinator(const SingleClientCoordinator& copy) :
-    refdb(copy.refdb), hashSeed(copy.hashSeed)
-  {
-  }
-
   SingleClientCoordinator::~SingleClientCoordinator()
   {
   }
@@ -67,7 +62,7 @@ namespace versos
 
   int SingleClientCoordinator::add(Version& v, VersionedObject& o)
   {
-    // we add without checking what v's state is since Repository is doing all the checks
+    // we create without checking what v's state is since Repository is doing all the checks
     return o.create(checkout(v.getParentId()), v);
   }
 
@@ -77,13 +72,18 @@ namespace versos
     return o.remove(v);
   }
 
-  int SingleClientCoordinator::commit(Version& v)
+  int SingleClientCoordinator::makeHEAD(const Version& v)
+  {
+    return refdb.makeHEAD(v);
+  }
+
+  int SingleClientCoordinator::commit(const Version& v)
   {
     // we commit without checking what v's state is since Repository is doing all the checks
-    boost::ptr_set<VersionedObject>::iterator it;
+    boost::ptr_set<VersionedObject>::iterator o;
 
-    for (it = getObjects(v).begin(); it != getObjects(v).end(); ++it)
-      if (it->commit(v))
+    for (o = getObjects(v).begin(); o != getObjects(v).end(); ++o)
+      if (o->commit(v))
         return -22;
 
     return refdb.commit(v);

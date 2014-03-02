@@ -39,17 +39,23 @@
  * checked out, the coordinator looks at this, compares against the mode that it was instantiated with and can 
  * either fail or take a proactive approach in order to resolve any possible syncMode conflict.
  *
+ * TODO: disallow add() and remove() for syncMode == NONE
+ *
  * TODO: currently, there is a restriction that only allows to add the same number of objects at each rank per 
  * transaction (due to Allgather's requirement)
  *
  * TODO: optimize object syncing by sending only the deltas (additions and removals)
+ *
+ * TODO: for AT_EACH_ADD_OR_REMOVE, object metadata is synchronized among clients but not stored immediately 
+ * at the backend refDB. We can add a flag to signal that when syncMode is AT_EACH_ADD_OR_REMOVE the version 
+ * at the backend should be updated after every syncing.
  */
 
 namespace versos
 {
   MpiCoordinator::MpiCoordinator(RefDB& refdb, const Options& o) :
-    SingleClientCoordinator(refdb, o.hash_seed), comm(o.mpi_comm), leaderRank(o.mpi_leader_rank), 
-    syncMode(o.sync_mode), localRefDB("local")
+    SingleClientCoordinator(refdb, o), comm(o.mpi_comm), leaderRank(o.mpi_leader_rank), syncMode(o.sync_mode), 
+    localRefDB("local")
   {
     init();
   }
@@ -193,6 +199,11 @@ namespace versos
     if (syncMode == Options::ClientSync::AT_EACH_COMMIT)
       allGather(getObjects(v));
 
+    // if (syncMode == Options::ClientSync::NONE)
+      // TODO: leader doesn't know about objects in each rank, so each rank has to call o.commit(v)
+      //       the problem is that we don't have the references to those objects, so the user has to do that 
+      //       on his/her own.
+
     int ret = 0;
 
     if (imLeader())
@@ -204,6 +215,21 @@ namespace versos
     }
 
     barrier();
+
+    return 0;
+  }
+
+  int MpiCoordinator::makeHEAD(const Version& v)
+  {
+    if (imLeader())
+    {
+      int ret = SingleClientCoordinator::makeHEAD(v);
+
+      if (ret)
+        handleError(ret);
+    }
+
+    localRefDB.makeHEAD(v);
 
     return 0;
   }

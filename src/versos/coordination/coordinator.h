@@ -20,6 +20,22 @@ namespace versos
     virtual ~Coordinator() {}
 
     /**
+     * commits.
+     *
+     * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
+     * etc..), since @c Repository should have done this check already.
+     */
+    virtual int commit(const Version& v) = 0;
+
+    /**
+     * makes the given version the head of the repo. Fails if head in the refdb is not the parent
+     *
+     * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
+     * etc..), since @c Repository should have done this check already.
+     */
+    virtual int makeHEAD(const Version& v) = 0;
+
+    /**
      * open the db
      */
     //virtual int openMetaDB() const = 0;
@@ -49,7 +65,7 @@ namespace versos
      * adds an object to a version
      *
      * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
-     * etc..), since @c Version should have done this check already.
+     * etc..), since @c Repository should have done this check already.
      */
     virtual int add(Version& v, VersionedObject& o) = 0;
 
@@ -57,22 +73,12 @@ namespace versos
      * removes an object from a version
      *
      * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
-     * etc..), since @c Version should have done this check already.
+     * etc..), since @c Repository should have done this check already.
      */
     virtual int remove(Version& v, VersionedObject& o) = 0;
 
     /**
-     * commits.
-     *
-     * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
-     * etc..), since @c Version should have done this check already.
-     */
-    virtual int commit(Version& v) = 0;
-
-    /**
      * initializes an empty repo. fails if non-empty.
-     *
-     * We can safely assume that the repo is empty since @c Repository should have done this check.
      */
     virtual int initRepository() = 0;
 
@@ -88,7 +94,7 @@ namespace versos
 
   protected:
     /**
-     * Access the internal set of a version. This is kind of a hack to overcome the restriction of not 
+     * Access the internal working set of a version. This is kind of a hack to overcome the restriction of not 
      * inheriting friendship (Coordinator is a friend of Version).
      */
     static boost::ptr_set<VersionedObject>& getObjects(Version& v);

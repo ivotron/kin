@@ -7,11 +7,16 @@
 namespace versos
 {
   class Version;
+  class VersionedObject;
 
   /**
    */
   class RefDB
   {
+  public:
+    enum LockType { EXCLUSIVE_LOCK, SHARED_LOCK };
+    // TODO: enum CommitStatusCheck { DONT_CHECK_FOR_COMMIT_STATUS, CHECK_FOR_COMMIT_STATUS };
+
   protected:
     std::string repoName;
     std::string headId;
@@ -19,8 +24,19 @@ namespace versos
   public:
     RefDB(const std::string& repoName);
     virtual ~RefDB();
-    virtual Version& create(const Version&, const std::string& hashSeed);
-    virtual const std::string& getHeadId() const;
+
+    /**
+     */
+    Version& create(const Version&, const std::string& hashSeed);
+
+    /**
+     */
+    Version& create(
+        const Version&, const std::string& hashSeed, LockType mode, const std::string& lockKey);
+
+    /**
+     */
+    const std::string& getHeadId() const;
 
     /**
      * inits a new db. Might fail if the db has been initialized previously
@@ -43,9 +59,39 @@ namespace versos
     virtual bool isEmpty() const = 0;
 
     /**
-     * marks the given version as committed. Fails if parent is not the head.
+     * makes the given version the head of the repo.
+     */
+    virtual int makeHEAD(const Version& v) = 0;
+
+    /**
+     * marks the given version as committed.
      */
     virtual int commit(const Version& v) = 0;
+
+    // TODO: int get(Version& v, set<Obj> objects);
+
+    /**
+     * modifies the version stored in the db so that it adds an object to it. While we have the guarantee that 
+     * the given @c Version object has been already checked for OKness, this method might fail if the remote 
+     * version being updated has been committed externally (i.e. not through an instance of this object).
+     */
+    virtual int add(const Version& v, const VersionedObject& o) = 0;
+
+    /**
+     * modifies the version stored in the db so that metadata of all objects of the given version are added to 
+     * it. While we have the guarantee that the given @c Version object has been already checked for OKness, 
+     * this method might fail if the remote version being updated has been committed externally (i.e. not 
+     * through an instance of this object).
+     */
+    virtual int addAll(const Version& v) = 0;
+
+    /**
+     * modifies the version stored in the db so that it removes an object from it. While we have the guarantee 
+     * that the given @c Version object has been already checked for OKness, this method might fail if the 
+     * remote version being updated has been committed externally (i.e. not through an instance of this 
+     * object).
+     */
+    virtual int remove(const Version& v, const VersionedObject& o) = 0;
 
     /**
      * retrieves the metadata of the given version id.
@@ -57,20 +103,17 @@ namespace versos
      */
     virtual int remove(const Version& v) = 0;
 
-    /**
-     * acquires a lock for the given version.
-     */
-    virtual int lock(const Version& v, int mode) = 0;
-
   protected:
     /**
-     * takes ownership of the passed pointer.
+     * adds the given version to the database and acquires an EXCLUSIVE_LOCK over the version.
      */
-    virtual int own(boost::shared_ptr<Version> v) = 0;
+    int own(boost::shared_ptr<Version> v);
+
+    /**
+     * adds the given version to the database. When a SHARED_LOCK is given, a lockKey should be passed too. 
+     * The implementation should take ownership of the passed pointer.
+     */
+    virtual int own(boost::shared_ptr<Version> v, LockType lock, const std::string& lockKey) = 0;
   };
-  // LogRefDB (log-structured db):
-  //
-  // 1. get the diff of object removal/deletion w.r.t. parent version
-  // 2. for each added/removed object, add/remove it to the metadata object
 }
 #endif

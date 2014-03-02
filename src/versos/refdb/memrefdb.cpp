@@ -1,6 +1,7 @@
 #include "versos/refdb/memrefdb.h"
 
 #include "versos/version.h"
+#include "versos/objectversioning/versionedobject.h"
 
 #include <boost/serialization/shared_ptr.hpp>
 
@@ -29,19 +30,18 @@ namespace versos
     return revisions.empty();
   }
 
-  int MemRefDB::commit(const Version& v)
+  int MemRefDB::makeHEAD(const Version& v)
   {
-    if (v.getParentId() != getHeadId())
-      // TODO: we only support sequential histories, thus if HEAD changed since the time @c v's was 
-      // instantiated, then committing would break the versioning sequence. This will change when we add 
-      // support for non-serializable histories (a.k.a. branching). This could possibly result in having a new 
-      // abstract method RefDB::makeHEAD() that operates separately from this commit() one, i.e. commit() 
-      // would just add to the db without checking if the given version is replacing becoming the head of the 
-      // repo.
+    if (v.getParentId() != headId)
       return -54;
 
     headId = v.getId();
 
+    return 0;
+  }
+
+  int MemRefDB::commit(const Version&)
+  {
     return 0;
   }
 
@@ -55,6 +55,21 @@ namespace versos
     return v;
   }
 
+  int MemRefDB::add(const Version&, const VersionedObject&)
+  {
+    return 0;
+  }
+
+  int MemRefDB::remove(const Version&, const VersionedObject&)
+  {
+    return 0;
+  }
+
+  int MemRefDB::addAll(const Version&)
+  {
+    return 0;
+  }
+
   int MemRefDB::remove(const Version& uncommitted)
   {
     if (revisions.erase(uncommitted.getId()) != 1)
@@ -63,21 +78,20 @@ namespace versos
     return 0;
   }
 
-  int MemRefDB::lock(const Version&, int)
-  {
-    return -53;
-  }
-
   int MemRefDB::add(boost::shared_ptr<Version> v)
   {
-    return own(v);
+    return RefDB::own(v);
   }
 
-  int MemRefDB::own(boost::shared_ptr<Version> v)
+  int MemRefDB::own(boost::shared_ptr<Version> v, LockType lock, const std::string&)
   {
+    if (lock == SHARED_LOCK)
+      // can't be shared
+      return -56;
+
     if (revisions.find(v->getId()) != revisions.end())
       // re-adding an already-added version; or (very unlikely) there is a hash collision
-      return -56;
+      return -57;
 
     revisions[v->getId()] = v;
 

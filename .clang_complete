@@ -4,6 +4,7 @@
 -I./src/test/gmock/include/
 -I./src/test/mpi_mock/
 -I/usr/include/
+-I/usr/include/hiredis/
 -I/usr/include/openssl
 -I/usr/include/mpi/
 -Wall

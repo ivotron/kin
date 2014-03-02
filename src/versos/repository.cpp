@@ -65,6 +65,9 @@ namespace versos
     if (coordinator->getHeadId(headId))
       return Version::ERROR;
 
+    // TODO: implement a Coordinator::checkoutHEAD() in order to ensure that checking the HEAD and checking it 
+    // out is done atomically
+
     return checkout(headId);
   }
 
@@ -116,10 +119,15 @@ namespace versos
 
     int ret = coordinator->commit(v);
 
+    v.setStatus(Version::COMMITTED);
+
     if (ret)
       return ret;
 
-    v.setStatus(Version::COMMITTED);
+    ret = coordinator->makeHEAD(v);
+
+    if (ret)
+      return ret;
 
     return 0;
   }

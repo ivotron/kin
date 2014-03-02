@@ -42,6 +42,7 @@ namespace versos
     int add(Version& v, VersionedObject& o);
     int remove(Version& v, VersionedObject& o);
     int commit(Version& v);
+    int makeHEAD(const Version& v);
     bool isRepositoryEmpty();
     int shutdown();
 
