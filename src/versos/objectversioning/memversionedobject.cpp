@@ -9,24 +9,17 @@ BOOST_CLASS_EXPORT_IMPLEMENT(versos::MemVersionedObject);
 namespace versos
 {
   MemVersionedObject::MemVersionedObject()
-    : VersionedObject("in-mem", "noRepo", "noBaseName", VersionedObject::VERIFY_CONTAINMENT)
+    : VersionedObject("in-mem", "noRepo", "noBaseName")
   {
     boost::serialization::void_cast_register<MemVersionedObject, VersionedObject>();
   }
-  MemVersionedObject::MemVersionedObject(const std::string& repoName, const std::string& baseName,
-      VersionedObject::ContainmentVerification check)
-    : VersionedObject("in-mem", repoName, baseName, check)
+  MemVersionedObject::MemVersionedObject(const std::string& repoName, const std::string& baseName)
+    : VersionedObject("in-mem", repoName, baseName)
   {
     boost::serialization::void_cast_register<MemVersionedObject, VersionedObject>();
   }
   MemVersionedObject::MemVersionedObject(const Repository& repo, const std::string& baseName)
-    : VersionedObject("in-mem", repo, baseName, VersionedObject::VERIFY_CONTAINMENT)
-  {
-    boost::serialization::void_cast_register<MemVersionedObject, VersionedObject>();
-  }
-  MemVersionedObject::MemVersionedObject(const Repository& repo, const std::string& baseName, 
-      VersionedObject::ContainmentVerification check)
-    : VersionedObject("in-mem", repo, baseName, check)
+    : VersionedObject("in-mem", repo, baseName)
   {
     boost::serialization::void_cast_register<MemVersionedObject, VersionedObject>();
   }
@@ -99,6 +92,6 @@ namespace versos
 
   VersionedObject* MemVersionedObject::do_clone() const
   {
-    return new MemVersionedObject(repoName, baseName, checkForContainment);
+    return new MemVersionedObject(repoName, baseName);
   }
 }

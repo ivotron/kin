@@ -96,6 +96,10 @@ namespace versos
      * names (eg. "rados", "rbd", "riak", etc.) that the @c Repository class checks before operating on an 
      * object.
      *
+     * TODO: Version maintains the working set in parent's/added/removed sets of objects. For syncMode == 
+     * at-each-add/remove, there's significant overhead if too many objects are added/removed from a 
+     * transaction. We can add a Version::flatten() method (similar to what getObjects() does)
+     *
      * TODO: currently, every time a coordinator commits, the associated version becomes the HEAD of the repo. 
      * We would like to be more flexible and support:
      *

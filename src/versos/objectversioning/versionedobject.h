@@ -38,20 +38,15 @@ namespace versos
   {
     friend class boost::serialization::access;
 
-  public:
-    enum ContainmentVerification { VERIFY_CONTAINMENT, DONT_VERIFY_CONTAINMENT };
-
   protected:
     std::string interfaceName;
     std::string repoName;
     std::string baseName;
-    ContainmentVerification checkForContainment;
+    int id;
 
   public:
-    VersionedObject(const std::string& interfaceName, const Repository& repo, const std::string& baseName, 
-        ContainmentVerification check);
-    VersionedObject(const std::string& interfaceName, const std::string& repoName, const std::string& 
-        baseName, ContainmentVerification check);
+    VersionedObject(const std::string& interfaceName, const Repository& repo, const std::string& baseName);
+    VersionedObject(const std::string& interfaceName, const std::string& repoName, const std::string& base);
     virtual ~VersionedObject();
 
     /**
@@ -61,7 +56,7 @@ namespace versos
      * We can safely assume that the versions are safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
      * etc..), since @c Coordinator should have done this check already.
      */
-    virtual int create(const Version& parent, const Version& child) = 0;
+    virtual int create(const Version& parent, const Version& child);
 
     /**
      * marks the object as committed. From a high-level point of view, this signals the end of writes to the 
@@ -70,7 +65,7 @@ namespace versos
      * We can safely assume that the version is safe to commit (i.e. it's not a Version::NOT_FOUND, etc..), 
      * since @c Repository has already done this check.
      */
-    virtual int commit(const Version& v) = 0;
+    virtual int commit(const Version& v);
 
     /**
      * removes the given version of this object.
@@ -78,22 +73,22 @@ namespace versos
      * We can safely assume that the version is safe to be removed (i.e. it's not a Version::NOT_FOUND, 
      * etc..), since @c Repository has already done this check.
      */
-    virtual int remove(const Version& v) = 0;
+    virtual int remove(const Version& v);
 
     const std::string& getInterfaceName() const;
     const std::string& getBaseName() const;
     const std::string& getRepositoryName() const;
+    int getId(const Version& v, std::string& id) const;
 
     VersionedObject* clone() const;
 
   protected:
+    VersionedObject();
     VersionedObject( const VersionedObject& );
     void operator=( const VersionedObject& );
 
-    int getId(const Version& v, std::string& id) const;
-
   private:
-    virtual VersionedObject* do_clone() const = 0;
+    virtual VersionedObject* do_clone() const;
     template<class Archive>
     void serialize(Archive &ar, const unsigned int)
     {
@@ -108,6 +103,5 @@ namespace versos
   bool operator==( const VersionedObject& l, const VersionedObject& r );
 
   bool operator<( const VersionedObject& l, const VersionedObject& r );
-
 }
 #endif

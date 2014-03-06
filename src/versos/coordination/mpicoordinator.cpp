@@ -60,18 +60,6 @@ namespace versos
     init();
   }
 
-  MpiCoordinator::MpiCoordinator(
-      MPI_Comm comm,
-      int leaderRank,
-      Options::ClientSync::Mode syncMode,
-      RefDB& refdb,
-      const std::string& hashSeed) :
-    SingleClientCoordinator(refdb, hashSeed), comm(comm), leaderRank(leaderRank), syncMode(syncMode), 
-    localRefDB("local")
-  {
-    init();
-  }
-
   void MpiCoordinator::init()
   {
     if (comm == MPI_COMM_NULL || comm == -1)
@@ -132,9 +120,6 @@ namespace versos
           handleError(-61);
 
         parentId = leaderV.getParentId();
-
-        if (syncMode != Options::ClientSync::NONE)
-          objects = getObjects(leaderV);
       }
 
       broadcast(parentId);
@@ -157,39 +142,57 @@ namespace versos
 
   Version& MpiCoordinator::create(const Version& parent)
   {
-    // parent should be in local DB (must have been checked-out or created)
+    if (syncMode == Options::ClientSync::NONE && parent.size() != 0)
+      handleError(-62);
+
     if (!localRefDB.checkout(parent.getId()).isOK())
       handleError(-63);
 
-    // since parent is here, we don't need to contact the leader
-    Version& newVersion = localRefDB.create(parent, hashSeed);
+    if (imLeader() && SingleClientCoordinator::create(parent) == Version::ERROR)
+      handleError(-64);
 
-    if (syncMode == Options::ClientSync::NONE)
-      getObjects(newVersion).clear();
+    // since parent is here, we don't need to synchronize with the leader (in other words, singlecoordinator 
+    // should create the same version id and since it has all the object metadata needed, the leader can work 
+    // on its own)
+    Version& newVersion = localRefDB.create(parent, hashSeed);
 
     return newVersion;
   }
 
   int MpiCoordinator::add(Version& v, VersionedObject& o)
   {
-    if (SingleClientCoordinator::add(v, o))
-      handleError(-65);
-
     if (syncMode == Options::ClientSync::NONE)
-      getObjects(v).clear();
-    else if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
-      allGather(getObjects(v));
+      return -1;
+
+    int ret = v.add(o);
+    if (ret)
+      handleError(ret);
+
+    if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
+      allGather(v);
+
+    ret = o.create(checkout(v.getParentId()), v);
+    if (ret)
+      handleError(ret);
 
     return 0;
   }
 
   int MpiCoordinator::remove(Version& v, VersionedObject& o)
   {
-    if (SingleClientCoordinator::remove(v, o))
-      handleError(-66);
+    if (syncMode == Options::ClientSync::NONE)
+      return -1;
+
+    int ret = v.remove(o);
+    if (ret)
+      handleError(ret);
 
     if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
-      allGather(getObjects(v));
+      allGather(v);
+
+    ret = o.remove(v);
+    if (ret)
+      handleError(ret);
 
     return 0;
   }
@@ -197,22 +200,24 @@ namespace versos
   int MpiCoordinator::commit(Version& v)
   {
     if (syncMode == Options::ClientSync::AT_EACH_COMMIT)
-      allGather(getObjects(v));
+      allGather(v);
 
     // if (syncMode == Options::ClientSync::NONE)
       // TODO: leader doesn't know about objects in each rank, so each rank has to call o.commit(v)
       //       the problem is that we don't have the references to those objects, so the user has to do that 
-      //       on his/her own.
-
-    int ret = 0;
+      //       on his/her own. We can enforce this by checking if the object being committed (locally) has 
+      //       been committed in the objectstore (by adding some sort of ::VersionedObject::isCommited() 
+      //       method
 
     if (imLeader())
     {
-      ret = SingleClientCoordinator::commit(v);
+      int ret = SingleClientCoordinator::commit(v);
 
       if (ret)
         handleError(ret);
     }
+
+    v.setStatus(Version::COMMITTED);
 
     barrier();
 
@@ -228,8 +233,6 @@ namespace versos
       if (ret)
         handleError(ret);
     }
-
-    localRefDB.makeHEAD(v);
 
     return 0;
   }
@@ -297,10 +300,11 @@ namespace versos
     if (MPI_Bcast(raw, 41, MPI_CHAR, leaderRank, comm))
       MPI_Abort(comm, -69);
 
-    id = std::string(raw);
-
     if (!imLeader())
+    {
+      id = std::string(raw);
       delete raw;
+    }
   }
 
   void MpiCoordinator::broadcast(boost::ptr_set<VersionedObject>& objects) const
@@ -339,14 +343,16 @@ namespace versos
     }
   }
 
-  void MpiCoordinator::allGather(boost::ptr_set<VersionedObject>& objects) const
+  void MpiCoordinator::allGather(Version& v) const
   {
-    // get the total number of objects across all ranks
-    int localNumObjects = objects.size();
+    int localNumObjects = v.getAdded().size() + v.getRemoved().size();
     int globalNumObjects;
 
+    if (localNumObjects == 0)
+      return;
+
     if (MPI_Allreduce(&localNumObjects, &globalNumObjects, 1, MPI_INT, MPI_SUM, comm))
-      MPI_Abort(comm, -72);
+    MPI_Abort(comm, -72);
 
     if (globalNumObjects != (commSize * localNumObjects))
       MPI_Abort(comm, -73);
@@ -356,7 +362,8 @@ namespace versos
     try
     {
       boost::archive::text_oarchive oarch(ssLocal);
-      oarch << objects;
+      oarch << v.getAdded();
+      oarch << v.getRemoved();
     }
     catch (...)
     {
@@ -374,24 +381,34 @@ namespace versos
 
     std::stringstream ssGlobal(globalBytes);
 
-    objects.clear();
-
-    // de-serialize, one set at a time (one set per rank)
+    // de-serialize, one pair of sets at a time (added/removed per rank)
     for (int i = 0; i < commSize; ++i)
     {
-      boost::ptr_set<VersionedObject> objectsForRank;
+      boost::ptr_set<VersionedObject> addedObjects;
+      boost::ptr_set<VersionedObject> removedObjects;
 
       try
       {
         boost::archive::text_iarchive iarch(ssGlobal);
-        iarch >> objectsForRank;
+        iarch >> addedObjects;
+        iarch >> removedObjects;
       }
       catch (...)
       {
         MPI_Abort(comm, -75);
       }
 
-      objects.insert(objectsForRank);
+      boost::ptr_set<VersionedObject>::iterator it;
+
+      for (it = addedObjects.begin(); it != addedObjects.end(); ++it)
+        if (!v.contains(*it))
+          v.add(*it);
+
+      for (it = removedObjects.begin(); it != removedObjects.end(); ++it)
+        if (v.contains(*it))
+          v.remove(*it);
     }
+
+    // TODO: throw an exception if a rank added/removed the same object
   }
 }

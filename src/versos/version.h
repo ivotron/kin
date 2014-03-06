@@ -10,22 +10,22 @@
 #include <set>
 
 #include <boost/ptr_container/ptr_set.hpp>
-#include <boost/serialization/access.hpp>
 
 namespace versos
 {
   class VersionedObject;
-  class Coordinator;
-  class Repository;
+  class SingleClientCoordinator;
+  class MpiCoordinator;
+  class BackendCoordinator;
 
   /**
    * interface to a version.
    */
   class Version
   {
-    friend class boost::serialization::access;
-    friend class Repository;
-    friend class Coordinator;
+    friend class SingleClientCoordinator;
+    friend class MpiCoordinator;
+    friend class BackendCoordinator;
   public:
     /**
      * ONLY_ONE is used only by the singleton NOT_FOUND and is used to 
@@ -41,12 +41,15 @@ namespace versos
     const std::string id;
     const std::string parentId;
     Status status;
-    boost::ptr_set<VersionedObject> objects;
+    boost::ptr_set<VersionedObject> parentObjects;
+    boost::ptr_set<VersionedObject> addedObjects;
+    boost::ptr_set<VersionedObject> removedObjects;
 
   public:
     Version(const std::string& id, const Version& parent);
     Version(
-        const std::string& id, const std::string parentId, const boost::ptr_set<VersionedObject>& objects);
+        const std::string& id, const std::string parentId, const boost::ptr_set<VersionedObject>& 
+        parentObjects);
     ~Version();
 
     Status getStatus() const;
@@ -68,6 +71,27 @@ namespace versos
     bool isCommitted() const;
 
     /**
+     * returns a copy of the set of objects that are part of this version. This is equivalent to doing @code 
+     * getParentObjects() - getRemoved() + getAdded() @endcode
+     */
+    boost::ptr_set<VersionedObject> getObjects() const;
+
+    /**
+     * Objects that came from parent's version.
+     */
+    const boost::ptr_set<VersionedObject>& getParents() const;
+
+    /**
+     * elements that have been added to this version w.r.t. the parent's objects.
+     */
+    const boost::ptr_set<VersionedObject>& getAdded() const;
+
+    /**
+     * elements that have been removed to this version w.r.t. the parent's objects.
+     */
+    const boost::ptr_set<VersionedObject>& getRemoved() const;
+
+    /**
      * whether the given object is part of this version
      */
     bool contains(const VersionedObject& o) const;
@@ -86,38 +110,31 @@ namespace versos
     /**
      * Adds an object to this version.
      */
-    int add(VersionedObject& o);
+    int add(const VersionedObject& o);
+
+    /**
+     * Adds a set of objects to this version.
+     */
+    int add(const boost::ptr_set<VersionedObject>& o);
 
     /**
      * removes an object.
      */
-    int remove(VersionedObject& o);
+    int remove(const VersionedObject& o);
+
+    /**
+     * Removes a set of objects to this version.
+     */
+    int remove(const boost::ptr_set<VersionedObject>& o);
 
     /**
      * commits the staged objects.
      */
     void setStatus(Status status);
 
-    /**
-     * objects that are part of this version.
-     *
-     * **NOTE**: only used by Coordinator
-     */
-    boost::ptr_set<VersionedObject>& getObjects();
-    const boost::ptr_set<VersionedObject>& getObjectsConst() const;
-
   private:
     Version();
     Version(const std::string& id);
-
-    template<class Archive>
-    void serialize(Archive &ar, const unsigned int)
-    {
-      ar & id;
-      ar & parentId;
-      ar & status;
-      ar & objects;
-    }
   };
 
   std::ostream& operator<<(std::ostream& o, const Version& b);

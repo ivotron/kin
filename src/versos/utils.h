@@ -1,11 +1,12 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <string>
-#include <map>
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include <map>
 #include <sstream>
+#include <string>
+#include <vector>
 
 //#include <boost/serialization/serialization.hpp>
 //#include <boost/serialization/map.hpp>
@@ -23,6 +24,23 @@ public:
     std::ostringstream ss;
     ss << anything;
     return ss.str();
+  }
+
+  static std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems)
+  {
+    std::stringstream ss(s);
+    std::string item;
+    while (std::getline(ss, item, delim)) {
+      elems.push_back(item);
+    }
+    return elems;
+  }
+
+  static std::vector<std::string> split(const std::string &s, char delim)
+  {
+    std::vector<std::string> elems;
+    split(s, delim, elems);
+    return elems;
   }
 
   /*

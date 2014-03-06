@@ -19,10 +19,9 @@ namespace versos
   protected:
     RefDB& refdb;
     std::string hashSeed;
+    Options::ClientSync::Mode syncMode;
   public:
     SingleClientCoordinator(RefDB& refdb, const Options& o);
-    SingleClientCoordinator(RefDB& refdb);
-    SingleClientCoordinator(RefDB& refdb, const std::string& hashSeed);
     ~SingleClientCoordinator();
 
     // inherited
@@ -31,7 +30,7 @@ namespace versos
     Version& create(const Version& parent);
     int add(Version& v, VersionedObject& o);
     int remove(Version& v, VersionedObject& o);
-    int commit(const Version& v);
+    int commit(Version& v);
     int makeHEAD(const Version& v);
     int initRepository();
     bool isRepositoryEmpty();

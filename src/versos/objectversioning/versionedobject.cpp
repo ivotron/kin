@@ -18,27 +18,27 @@ namespace versos
     return ss.str();
   }
 
+  VersionedObject::VersionedObject()
+  {
+  }
+
   VersionedObject::VersionedObject(
       const std::string& interfaceName,
       const std::string& repoName,
-      const std::string& baseName,
-      ContainmentVerification check) :
+      const std::string& baseName) :
     interfaceName(interfaceName),
     repoName(repoName),
-    baseName(baseName),
-    checkForContainment(check)
+    baseName(baseName)
   {
   }
 
   VersionedObject::VersionedObject(
       const std::string& interfaceName,
       const Repository& repo,
-      const std::string& baseName,
-      ContainmentVerification check) :
+      const std::string& baseName) :
     interfaceName(interfaceName),
     repoName(repo.getName()),
-    baseName(baseName),
-    checkForContainment(check)
+    baseName(baseName)
   {
   }
 
@@ -51,11 +51,7 @@ namespace versos
     if (!v.isOK())
       return -90;
 
-    if (checkForContainment == VERIFY_CONTAINMENT && !v.contains(*this))
-      // TODO: if this check becomes expensive, we can add an option to trust the user. This means that a user 
-      // won't operate inconsistently in terms of intra-transaction object metadata operations, eg. remove an 
-      // object and then read/write to it
-      return -91;
+    // TODO: check for containment
 
     // TODO: maintain a cache of generated ids, so that we don't have this concatenation overhead
     id = interfaceName + "_" + repoName + "_" + baseName + "_" + to_str(v.getId());
@@ -76,9 +72,29 @@ namespace versos
     return repoName;
   }
 
+  int VersionedObject::commit(const Version&)
+  {
+    return 0;
+  }
+
+  int VersionedObject::remove(const Version&)
+  {
+    return 0;
+  }
+
+  int VersionedObject::create(const Version&, const Version&)
+  {
+    return 0;
+  }
+
   VersionedObject* VersionedObject::clone() const
   {
     return do_clone();
+  }
+
+  VersionedObject* VersionedObject::do_clone() const
+  {
+    return new VersionedObject(interfaceName, repoName, baseName);
   }
 
   VersionedObject* new_clone( const VersionedObject& vo )

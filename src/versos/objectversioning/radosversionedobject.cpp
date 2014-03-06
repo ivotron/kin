@@ -4,26 +4,31 @@
 
 #include <sstream>
 
+BOOST_CLASS_EXPORT_KEY(versos::RadosVersionedObject);
+BOOST_CLASS_EXPORT_IMPLEMENT(versos::RadosVersionedObject);
+
 namespace versos
 {
 
+  RadosVersionedObject::RadosVersionedObject() :
+    VersionedObject("rados", repoName, baseName), ioctx(forDefaultConstructor)
+  {
+  }
+
   RadosVersionedObject::RadosVersionedObject(
         librados::IoCtx& ctx, const std::string& repoName, const std::string& baseName) :
-    VersionedObject("rados", repoName, baseName, VERIFY_CONTAINMENT), ioctx(ctx)
+    VersionedObject("rados", repoName, baseName), ioctx(ctx)
   {
+    boost::serialization::void_cast_register<RadosVersionedObject, VersionedObject>();
   }
 
   RadosVersionedObject::RadosVersionedObject(
         librados::IoCtx& ctx, const Repository& repo, const std::string& baseName) :
-    VersionedObject("rados", repo, baseName, VERIFY_CONTAINMENT), ioctx(ctx)
+    VersionedObject("rados", repo, baseName), ioctx(ctx)
   {
+    boost::serialization::void_cast_register<RadosVersionedObject, VersionedObject>();
   }
 
-  RadosVersionedObject::RadosVersionedObject(
-        librados::IoCtx& ctx, const Repository& repo, const char* baseName) :
-    VersionedObject("rados", repo, std::string(baseName), VERIFY_CONTAINMENT), ioctx(ctx)
-  {
-  }
   RadosVersionedObject::~RadosVersionedObject()
   {
   }

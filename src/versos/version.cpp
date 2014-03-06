@@ -21,42 +21,92 @@ namespace versos
   }
 
   Version::Version(const std::string& id, const Version& parent) :
-    id(id), parentId(parent.getId()), status(STAGED), objects(parent.objects)
+    id(id), parentId(parent.getId()), status(STAGED), parentObjects(parent.getObjects())
   {
   }
 
   Version::Version(
       const std::string& id, std::string parentId, const boost::ptr_set<VersionedObject>& objects) :
-    id(id), parentId(parentId), status(COMMITTED), objects(objects)
+    id(id), parentId(parentId), status(COMMITTED), addedObjects(objects)
   {
   }
-
-  //Version::Version(const Version& copy) :
-    //id(copy.id), parentId(copy.parentId), status(copy.status), objects(copy.objects)
-  //{
-  //}
 
   Version::~Version()
   {
   }
 
-  int Version::add(VersionedObject& o)
+  int Version::add(const boost::ptr_set<VersionedObject>& o)
   {
-    if (contains(o))
-      return -12;
+    if (!isOK())
+      return -1;
 
-    objects.insert(o.clone());
+    if (isCommitted())
+      return -1;
+
+    boost::ptr_set<VersionedObject>::iterator it;
+
+    for (it = o.begin(); it != o.end(); ++it)
+    {
+      int ret = add(*it);
+
+      if (ret)
+        return ret;
+    }
 
     return 0;
   }
 
-  int Version::remove(VersionedObject& o)
+  int Version::remove(const boost::ptr_set<VersionedObject>& o)
   {
+    if (!isOK())
+      return -1;
+
+    if (isCommitted())
+      return -2;
+
+    boost::ptr_set<VersionedObject>::iterator it;
+
+    for (it = o.begin(); it != o.end(); ++it)
+    {
+      int ret = remove(*it);
+
+      if (ret)
+        return ret;
+    }
+
+    return 0;
+  }
+
+  int Version::add(const VersionedObject& o)
+  {
+    if (!isOK())
+      return -1;
+
+    if (isCommitted())
+      return -1;
+
+    if (contains(o))
+      return -12;
+
+    addedObjects.insert(o.clone());
+
+    return 0;
+  }
+
+  int Version::remove(const VersionedObject& o)
+  {
+    if (!isOK())
+      return -2;
+
+    if (isCommitted())
+      return -3;
+
+    // TODO: check if user has written to the object, in which case we should fail (or not, based on a knob)
+
     if (!contains(o))
       return -15;
 
-    if (objects.erase(o) != 1)
-      return -16;
+    removedObjects.insert(o.clone());
 
     return 0;
   }
@@ -83,7 +133,14 @@ namespace versos
 
   bool Version::contains(const VersionedObject& o) const
   {
-    return objects.find(o) != objects.end();
+    if (addedObjects.find(o) != addedObjects.end())
+      return true;
+
+    if ((parentObjects.find(o) != parentObjects.end()) && (removedObjects.find(o) == removedObjects.end()) )
+      // if it's in parent's and hasn't been removed
+      return true;
+
+    return false;
   }
 
   Version::Status Version::getStatus() const
@@ -98,16 +155,41 @@ namespace versos
 
   unsigned int Version::size() const
   {
-    return objects.size();
+    return parentObjects.size() + addedObjects.size() - removedObjects.size();
   }
 
-  boost::ptr_set<VersionedObject>& Version::getObjects()
+  const boost::ptr_set<VersionedObject>& Version::getParents() const
   {
-    return objects;
+    return parentObjects;
   }
 
-  const boost::ptr_set<VersionedObject>& Version::getObjectsConst() const
+  const boost::ptr_set<VersionedObject>& Version::getAdded() const
   {
+    return addedObjects;
+  }
+
+  const boost::ptr_set<VersionedObject>& Version::getRemoved() const
+  {
+    return removedObjects;
+  }
+
+  /*
+   * TODO: the working set is maintained in parent's/added/removed sets of objects. For syncMode == 
+   * at-each-add/remove, there's significant overhead if too many objects are added/removed from a transaction 
+   * since the same objects are being resent every time. We can add a Version::flatten() method (similar to 
+   * what getObjects() does) that consolidates the objects in an internal workingSet container
+   */
+  boost::ptr_set<VersionedObject> Version::getObjects() const
+  {
+    boost::ptr_set<VersionedObject> objects = parentObjects;
+
+    objects.insert(addedObjects);
+
+    boost::ptr_set<VersionedObject>::iterator it;
+
+    for (it = removedObjects.begin(); it != removedObjects.end(); ++it)
+      objects.erase(*it);
+
     return objects;
   }
 

@@ -25,7 +25,7 @@ namespace versos
      * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
      * etc..), since @c Repository should have done this check already.
      */
-    virtual int commit(const Version& v) = 0;
+    virtual int commit(Version& v) = 0;
 
     /**
      * makes the given version the head of the repo. Fails if head in the refdb is not the parent
@@ -91,15 +91,6 @@ namespace versos
      * shuts down. No more operations can be done after this is invoked.
      */
     virtual int shutdown() = 0;
-
-  protected:
-    /**
-     * Access the internal working set of a version. This is kind of a hack to overcome the restriction of not 
-     * inheriting friendship (Coordinator is a friend of Version).
-     */
-    static boost::ptr_set<VersionedObject>& getObjects(Version& v);
-    static const boost::ptr_set<VersionedObject>& getObjects(const Version& v);
   };
 }
-
 #endif

@@ -9,17 +9,7 @@
 namespace versos
 {
   SingleClientCoordinator::SingleClientCoordinator(RefDB& refdb, const Options& o) :
-    refdb(refdb), hashSeed(o.hash_seed)
-  {
-  }
-
-  SingleClientCoordinator::SingleClientCoordinator(RefDB& refdb, const std::string& hashSeed) :
-    refdb(refdb), hashSeed(hashSeed)
-  {
-  }
-
-  SingleClientCoordinator::SingleClientCoordinator(RefDB& refdb) :
-    refdb(refdb), hashSeed("single")
+    refdb(refdb), hashSeed(o.hash_seed), syncMode(o.sync_mode)
   {
   }
 
@@ -48,7 +38,7 @@ namespace versos
 
     boost::ptr_set<VersionedObject>::iterator it;
 
-    for (it = getObjects(parent).begin(); it != getObjects(parent).end(); ++it)
+    for (it = v.getParents().begin(); it != v.getParents().end(); ++it)
     {
       if (it->create(parent, v))
       {
@@ -62,14 +52,37 @@ namespace versos
 
   int SingleClientCoordinator::add(Version& v, VersionedObject& o)
   {
-    // we create without checking what v's state is since Repository is doing all the checks
+    if (syncMode == Options::ClientSync::NONE)
+      return -1;
+
+    if (!v.isOK())
+      return -1;
+
+    if (v.isCommitted())
+      return -2;
+
+    v.add(o);
+
     return o.create(checkout(v.getParentId()), v);
   }
 
   int SingleClientCoordinator::remove(Version& v, VersionedObject& o)
   {
-    // we remove without checking what v's state is since Repository is doing all the checks
-    return o.remove(v);
+    if (syncMode == Options::ClientSync::NONE)
+      return -1;
+
+    if (!v.isOK())
+      return -1;
+
+    if (v.isCommitted())
+      return -2;
+
+    int ret = o.remove(v);
+
+    if (ret)
+      return ret;
+
+    return v.remove(o);
   }
 
   int SingleClientCoordinator::makeHEAD(const Version& v)
@@ -77,16 +90,28 @@ namespace versos
     return refdb.makeHEAD(v);
   }
 
-  int SingleClientCoordinator::commit(const Version& v)
+  int SingleClientCoordinator::commit(Version& v)
   {
-    // we commit without checking what v's state is since Repository is doing all the checks
+    if (!v.isOK())
+      return -4;
+
+    if (v.isCommitted())
+      return -5;
+
+    boost::ptr_set<VersionedObject> objects = v.getObjects();
     boost::ptr_set<VersionedObject>::iterator o;
 
-    for (o = getObjects(v).begin(); o != getObjects(v).end(); ++o)
+    for (o = objects.begin(); o != objects.end(); ++o)
       if (o->commit(v))
         return -22;
 
-    return refdb.commit(v);
+    v.setStatus(Version::COMMITTED);
+
+    int ret = refdb.commit(v);
+    if (ret)
+      return ret;
+
+    return 0;
   }
 
   int SingleClientCoordinator::initRepository()

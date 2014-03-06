@@ -7,6 +7,8 @@
 
 namespace versos
 {
+  // most of the functions are empty since we're backend-less
+
   MemRefDB::MemRefDB(const std::string& repoName) : RefDB(repoName)
   {
   }
@@ -51,6 +53,9 @@ namespace versos
       return Version::NOT_FOUND;
 
     const Version& v = *(revisions.find(id)->second);
+
+    if (!v.isCommitted())
+      return Version::ERROR;
 
     return v;
   }

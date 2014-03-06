@@ -25,7 +25,7 @@ TEST(singlecoordinator, basic_commit_of_root)
   versos::Version& v1 = repo.create(head);
 
   ASSERT_TRUE(v1.isOK());
-  ASSERT_TRUE(!v1.isCommitted());
+  ASSERT_FALSE(v1.isCommitted());
   ASSERT_EQ(versos::Version::STAGED, v1.getStatus());
   ASSERT_EQ(0u, v1.size());
   ASSERT_NE(versos::Version::PARENT_FOR_ROOT.getId(), v1.getId());
@@ -34,7 +34,7 @@ TEST(singlecoordinator, basic_commit_of_root)
 
   ASSERT_EQ(0, repo.add(v1, o1));
 
-  ASSERT_TRUE(!v1.isCommitted());
+  ASSERT_FALSE(v1.isCommitted());
   ASSERT_EQ(versos::Version::STAGED, v1.getStatus());
   ASSERT_EQ(1u, v1.size());
   ASSERT_TRUE(v1.contains(o1));
@@ -50,27 +50,40 @@ TEST(singlecoordinator, basic_commit_of_root)
 
   ASSERT_NE(v1, v2);
   ASSERT_TRUE(v2.isOK());
-  ASSERT_TRUE(!v2.isCommitted());
+  ASSERT_FALSE(v2.isCommitted());
   ASSERT_EQ(versos::Version::STAGED, v2.getStatus());
   ASSERT_EQ(1u, v2.size());
   ASSERT_TRUE(v2.contains(o1));
 
   ASSERT_EQ(0, repo.remove(v2, o1));
 
-  ASSERT_TRUE(!v2.isCommitted());
+  ASSERT_FALSE(v2.isCommitted());
   ASSERT_EQ(0u, v2.size());
-  ASSERT_TRUE(!v2.contains(o1));
+  ASSERT_TRUE(v2.getAdded().find(o1) == v2.getAdded().end());
+  ASSERT_FALSE(v2.getParents().find(o1) == v2.getParents().end());
+  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
+  ASSERT_FALSE(v2.contains(o1));
+  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
 
   ASSERT_EQ(0, repo.commit(v2));
+  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
 
   ASSERT_EQ(v2, repo.checkoutHEAD());
+  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
   ASSERT_TRUE(v2.isCommitted());
+  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
   ASSERT_EQ(versos::Version::COMMITTED, v2.getStatus());
+  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
   ASSERT_EQ(0u, v2.size());
-  ASSERT_TRUE(!v2.contains(o1));
+  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
+  ASSERT_TRUE(v2.getAdded().find(o1) == v2.getAdded().end());
+  ASSERT_FALSE(v2.getParents().find(o1) == v2.getParents().end());
+  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
+  ASSERT_FALSE(v2.contains(o1));
 
-  ASSERT_TRUE(!head.contains(o1));
+  ASSERT_FALSE(head.contains(o1));
   ASSERT_TRUE(v1.contains(o1));
+
 }
 
 TEST(singlecoordinator, values_between_versions)

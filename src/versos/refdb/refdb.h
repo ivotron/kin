@@ -94,7 +94,8 @@ namespace versos
     virtual int remove(const Version& v, const VersionedObject& o) = 0;
 
     /**
-     * retrieves the metadata of the given version id.
+     * retrieves the metadata of the given version id. Returns Version::ERROR If the version is not committed; 
+     * Version::NOT_FOUND if the version doesn't exist in the db.
      */
     virtual const Version& checkout(const std::string& id) = 0;
 

@@ -65,22 +65,11 @@ namespace versos
     if (coordinator->getHeadId(headId))
       return Version::ERROR;
 
-    // TODO: implement a Coordinator::checkoutHEAD() in order to ensure that checking the HEAD and checking it 
-    // out is done atomically
-
     return checkout(headId);
   }
 
   int Repository::add(Version& v, VersionedObject& o)
   {
-    if (!v.isOK())
-      return -0;
-
-    if (v.isCommitted())
-      return -1;
-
-    v.add(o);
-
     int ret = coordinator->add(v, o);
 
     if(ret)
@@ -91,35 +80,17 @@ namespace versos
 
   int Repository::remove(Version& v, VersionedObject& o)
   {
-    if (!v.isOK())
-      return -2;
-
-    if (v.isCommitted())
-      return -3;
-
-    // TODO: check if user has written to the object, in which case we should fail (or not, based on a knob)
-
     int ret = coordinator->remove(v, o);
 
     if (ret)
       return ret;
-
-    v.remove(o);
 
     return 0;
   }
 
   int Repository::commit(Version& v)
   {
-    if (!v.isOK())
-      return -4;
-
-    if (v.isCommitted())
-      return -5;
-
     int ret = coordinator->commit(v);
-
-    v.setStatus(Version::COMMITTED);
 
     if (ret)
       return ret;

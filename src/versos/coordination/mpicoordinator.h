@@ -26,13 +26,6 @@ namespace versos
   public:
     MpiCoordinator(RefDB& refdb, const Options& o);
 
-    MpiCoordinator(
-        MPI_Comm comm,
-        int leaderRank,
-        Options::ClientSync::Mode syncMode,
-        RefDB& refdb,
-        const std::string& hashSeed);
-
     ~MpiCoordinator();
 
     // inherited
@@ -62,8 +55,9 @@ namespace versos
     void broadcast(boost::ptr_set<VersionedObject>& objects) const;
 
     /**
+     * Syncs the current given version with other clients.
      */
-    void allGather(boost::ptr_set<VersionedObject>& objects) const;
+    void allGather(Version& v) const;
 
     /**
      */

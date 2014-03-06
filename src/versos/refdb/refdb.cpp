@@ -5,6 +5,7 @@
 
 #include <sstream>
 #include <iomanip>
+#include <stdexcept>
 
 #include <openssl/sha.h>
 
@@ -12,6 +13,8 @@ namespace versos
 {
   RefDB::RefDB(const std::string& repoName) : repoName(repoName)
   {
+    if (repoName.empty())
+      throw std::runtime_error("RefDB: empty repo name");
   }
 
   RefDB::~RefDB()
