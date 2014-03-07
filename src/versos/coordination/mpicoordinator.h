@@ -6,7 +6,7 @@
 #include "versos/options.h"
 #include "versos/refdb/memrefdb.h"
 
-#include <mpi.h>
+#include <boost/mpi/communicator.hpp>
 
 namespace versos
 {
@@ -17,12 +17,10 @@ namespace versos
   class MpiCoordinator : public SingleClientCoordinator
   {
   private:
-    MPI_Comm comm;
+    boost::mpi::communicator comm;
     int leaderRank;
-    int myRank;
     Options::ClientSync::Mode syncMode;
     MemRefDB localRefDB;
-    int commSize;
   public:
     MpiCoordinator(RefDB& refdb, const Options& o);
 

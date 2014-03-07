@@ -12,7 +12,7 @@ TEST(repository_test, test_default_options)
   ASSERT_TRUE(!o.metadb_initialize_if_empty);
   ASSERT_EQ(versos::Options::ClientSync::AT_EACH_COMMIT, o.sync_mode);
   ASSERT_EQ(0, o.mpi_leader_rank);
-  ASSERT_EQ(-1, o.mpi_comm);
+  ASSERT_EQ(NULL, o.mpi_comm);
 
   ASSERT_NO_THROW(versos::Repository repo("mydataset", o));
 

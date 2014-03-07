@@ -5,8 +5,16 @@
 #include <sstream>
 #include <string>
 
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
+// NOTE: this has to include the actual archives that are to be used, otherwise a runtime exception is thrown 
+// by boost
+// {
+#include <boost/mpi/packed_oarchive.hpp>
+#include <boost/mpi/packed_iarchive.hpp>
+//#include <boost/archive/binary_oarchive.hpp>
+//#include <boost/archive/binary_iarchive.hpp>
+//#include <boost/archive/text_oarchive.hpp>
+//#include <boost/archive/text_iarchive.hpp>
+// }
 #include <boost/noncopyable.hpp>
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/export.hpp>

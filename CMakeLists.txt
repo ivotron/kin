@@ -11,7 +11,7 @@ FIND_PACKAGE (MPI REQUIRED)
 INCLUDE_DIRECTORIES (${MPI_C_INCLUDE_PATH})
 
 # Boost
-FIND_PACKAGE (Boost 1.46 COMPONENTS serialization REQUIRED)
+FIND_PACKAGE (Boost 1.46 COMPONENTS mpi serialization REQUIRED)
 INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIRS})
 
 # OpenSSL
@@ -34,6 +34,7 @@ SET(VERSOS_SRC
   "src/versos/repository.cpp"
   "src/versos/refdb/refdb.cpp"
   "src/versos/refdb/memrefdb.cpp"
+  "src/versos/refdb/redisrefdb.cpp"
   "src/versos/coordination/singleclientcoordinator.cpp"
   "src/versos/coordination/mpicoordinator.cpp"
   "src/versos/objectversioning/versionedobject.cpp"

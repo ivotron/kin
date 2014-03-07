@@ -10,8 +10,6 @@ namespace versos
    */
   struct Options
   {
-    typedef int MPI_Comm;
-
     /**
      * supported types of coordinators.
      */
@@ -93,7 +91,7 @@ namespace versos
      * MPI communicator used by the @c MPI coordinator class. Assumes that the underlying type representing 
      * communicators is an int. Default: -1
      */
-    MPI_Comm mpi_comm;
+    void* mpi_comm;
 
     Options()
     {
@@ -107,7 +105,7 @@ namespace versos
       hash_seed = "";
 
       mpi_leader_rank = 0;
-      mpi_comm = -1;
+      mpi_comm = NULL;
     }
   };
 }

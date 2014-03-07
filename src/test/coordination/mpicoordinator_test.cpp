@@ -26,7 +26,7 @@ TEST(mpicoordinator_test, factory)
   //
   // ASSERT_ANY_THROW(versos::Repository repo("mydataset", o));
 
-  o.mpi_comm = comm;
+  o.mpi_comm = &comm;
 
   ASSERT_NO_THROW(versos::Repository repo("mydataset", o));
 
@@ -61,7 +61,7 @@ TEST(mpicoordinator_test, NONE_object_containment)
   o.metadb_initialize_if_empty = true;
   o.coordinator_type = versos::Options::Coordinator::MPI;
   o.mpi_leader_rank = 0;
-  o.mpi_comm = comm;
+  o.mpi_comm = &comm;
   o.sync_mode = versos::Options::ClientSync::NONE;
   o.hash_seed = "theseedforthetest";
 
@@ -135,7 +135,7 @@ TEST(mpicoordinator_test, AT_EACH_COMMIT_object_containment)
   o.metadb_initialize_if_empty = true;
   o.coordinator_type = versos::Options::Coordinator::MPI;
   o.mpi_leader_rank = 0;
-  o.mpi_comm = comm;
+  o.mpi_comm = &comm;
   o.sync_mode = versos::Options::ClientSync::AT_EACH_COMMIT;
   o.hash_seed = "theseedforthetest";
 
@@ -332,7 +332,7 @@ TEST(mpicoordinator_test, AT_EACH_ADD_OR_REMOVE_object_containment)
   o.metadb_initialize_if_empty = true;
   o.coordinator_type = versos::Options::Coordinator::MPI;
   o.mpi_leader_rank = 0;
-  o.mpi_comm = comm;
+  o.mpi_comm = &comm;
   o.sync_mode = versos::Options::ClientSync::AT_EACH_ADD_OR_REMOVE;
   o.hash_seed = "theseedforthetest";
 
@@ -488,7 +488,7 @@ TEST(mpicoordinator_test, wrong_mode_for_object_containment_operations)
   o.coordinator_type = versos::Options::Coordinator::MPI;
   o.sync_mode = versos::Options::ClientSync::NONE;
   o.mpi_leader_rank = 0;
-  o.mpi_comm = comm;
+  o.mpi_comm = &comm;
   o.hash_seed = "theseedforthetest";
 
   versos::Repository repo("mydataset", o);
@@ -513,7 +513,7 @@ TEST(mpicoordinator_test, values_between_tests)
   o.metadb_initialize_if_empty = true;
   o.coordinator_type = versos::Options::Coordinator::MPI;
   o.mpi_leader_rank = 0;
-  o.mpi_comm = comm;
+  o.mpi_comm = &comm;
   o.hash_seed = "theseedforthetest";
 
   versos::Repository repo("mydataset", o);

@@ -8,8 +8,12 @@
 #include <stdexcept>
 #include <vector>
 
+#include <mpi.h>
+
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
+#include <boost/mpi/collectives.hpp>
+#include <boost/mpi/environment.hpp>
 #include <boost/ptr_container/ptr_set.hpp>
 #include <boost/ptr_container/serialize_ptr_set.hpp>
 #include <boost/serialization/serialization.hpp>
@@ -39,12 +43,8 @@
  * checked out, the coordinator looks at this, compares against the mode that it was instantiated with and can 
  * either fail or take a proactive approach in order to resolve any possible syncMode conflict.
  *
- * TODO: disallow add() and remove() for syncMode == NONE
- *
  * TODO: currently, there is a restriction that only allows to add the same number of objects at each rank per 
  * transaction (due to Allgather's requirement)
- *
- * TODO: optimize object syncing by sending only the deltas (additions and removals)
  *
  * TODO: for AT_EACH_ADD_OR_REMOVE, object metadata is synchronized among clients but not stored immediately 
  * at the backend refDB. We can add a flag to signal that when syncMode is AT_EACH_ADD_OR_REMOVE the version 
@@ -54,28 +54,19 @@
 namespace versos
 {
   MpiCoordinator::MpiCoordinator(RefDB& refdb, const Options& o) :
-    SingleClientCoordinator(refdb, o), comm(o.mpi_comm), leaderRank(o.mpi_leader_rank), syncMode(o.sync_mode), 
-    localRefDB("local")
+    SingleClientCoordinator(refdb, o), comm(*((MPI_Comm *) o.mpi_comm), boost::mpi::comm_duplicate), 
+    leaderRank(o.mpi_leader_rank), syncMode(o.sync_mode), localRefDB("local")
   {
     init();
   }
 
   void MpiCoordinator::init()
   {
-    if (comm == MPI_COMM_NULL || comm == -1)
-      throw std::runtime_error("MPI comm is NULL");
-
-    if(MPI_Comm_size(comm, &commSize))
-      throw std::runtime_error("unable to get size of MPI comm");
-
     if (leaderRank < 0)
       throw std::runtime_error("leader rank should be positive");
 
-    if (leaderRank > (commSize - 1))
+    if (leaderRank > (comm.size() - 1))
       throw std::runtime_error("leader rank shouldn't be greater than size of MPI communicator");
-
-    if(MPI_Comm_rank(comm, &myRank))
-      throw std::runtime_error("unable to get MPI rank");
 
     // TODO:
     //   - openDB()
@@ -268,135 +259,46 @@ namespace versos
 
   bool MpiCoordinator::imLeader() const
   {
-    return myRank == leaderRank;
+    return comm.rank() == leaderRank;
   }
 
   void MpiCoordinator::handleError(int code) const
   {
-    MPI_Abort(comm, code);
+    boost::mpi::environment::abort(code);
   }
 
   void MpiCoordinator::barrier() const
   {
-    if(MPI_Barrier(comm))
-      MPI_Abort(comm, -67);
+    comm.barrier();
   }
 
   void MpiCoordinator::broadcast(int* value) const
   {
-    if (MPI_Bcast(value, 1, MPI_INT, leaderRank, comm))
-      MPI_Abort(comm, -68);
+    boost::mpi::broadcast(comm, *value, leaderRank);
   }
 
   void MpiCoordinator::broadcast(std::string& id) const
   {
-    char* raw;
-
-    if (imLeader())
-      raw = (char*) id.c_str();
-    else
-      raw = new char[41];
-
-    if (MPI_Bcast(raw, 41, MPI_CHAR, leaderRank, comm))
-      MPI_Abort(comm, -69);
-
-    if (!imLeader())
-    {
-      id = std::string(raw);
-      delete raw;
-    }
+    boost::mpi::broadcast(comm, id, leaderRank);
   }
 
   void MpiCoordinator::broadcast(boost::ptr_set<VersionedObject>& objects) const
   {
-    if (objects.size() == 0)
-      return;
-
-    unsigned int numBytes;
-    char* raw;
-
-    if (imLeader())
-    {
-      // serialize objects
-      std::stringstream ss;
-      boost::archive::text_oarchive oarch(ss);
-      oarch << objects;
-
-      numBytes = ss.str().size();
-      raw = const_cast<char*>(ss.str().data()); // OK to cast, we won't write to it
-    }
-
-    // send/receive chunk size
-    if (MPI_Bcast(&numBytes, 1, MPI_UNSIGNED, leaderRank, comm))
-      MPI_Abort(comm, -70);
-
-    // send/receive the object set
-    if (MPI_Bcast(&raw[0], numBytes, MPI_CHAR, leaderRank, comm))
-      MPI_Abort(comm, -71);
-
-    if (!imLeader())
-    {
-      // de-serialize it
-      std::stringstream ss(raw);
-      boost::archive::text_iarchive iarch(ss);
-      iarch >> objects;
-    }
+    boost::mpi::broadcast(comm, objects, leaderRank);
   }
 
   void MpiCoordinator::allGather(Version& v) const
   {
-    int localNumObjects = v.getAdded().size() + v.getRemoved().size();
-    int globalNumObjects;
+    std::vector<boost::ptr_set<VersionedObject> > addedObjectsV;
+    std::vector<boost::ptr_set<VersionedObject> > removedObjectsV;
 
-    if (localNumObjects == 0)
-      return;
+    boost::mpi::all_gather(comm, v.getAdded(), addedObjectsV);
+    boost::mpi::all_gather(comm, v.getRemoved(), removedObjectsV);
 
-    if (MPI_Allreduce(&localNumObjects, &globalNumObjects, 1, MPI_INT, MPI_SUM, comm))
-    MPI_Abort(comm, -72);
-
-    if (globalNumObjects != (commSize * localNumObjects))
-      MPI_Abort(comm, -73);
-
-    // serialize the local objects
-    std::stringstream ssLocal;
-    try
+    for (int i = 0 ; i < comm.size(); i++)
     {
-      boost::archive::text_oarchive oarch(ssLocal);
-      oarch << v.getAdded();
-      oarch << v.getRemoved();
-    }
-    catch (...)
-    {
-      MPI_Abort(comm, -76);
-    }
-
-    // send the local chunk/receive the whole chunk containing all sets
-    std::string strL = ssLocal.str();
-    int localNumBytes = strL.size();
-    char* localBytes = const_cast<char*>(strL.data()); // OK to cast, we won't write to it
-    char globalBytes[localNumBytes * commSize];
-
-    if (MPI_Allgather(localBytes, localNumBytes, MPI_CHAR, globalBytes, localNumBytes, MPI_CHAR, comm))
-      MPI_Abort(comm, -74);
-
-    std::stringstream ssGlobal(globalBytes);
-
-    // de-serialize, one pair of sets at a time (added/removed per rank)
-    for (int i = 0; i < commSize; ++i)
-    {
-      boost::ptr_set<VersionedObject> addedObjects;
-      boost::ptr_set<VersionedObject> removedObjects;
-
-      try
-      {
-        boost::archive::text_iarchive iarch(ssGlobal);
-        iarch >> addedObjects;
-        iarch >> removedObjects;
-      }
-      catch (...)
-      {
-        MPI_Abort(comm, -75);
-      }
+      boost::ptr_set<VersionedObject> addedObjects = addedObjectsV[i];
+      boost::ptr_set<VersionedObject> removedObjects = removedObjectsV[i];
 
       boost::ptr_set<VersionedObject>::iterator it;
 
@@ -409,6 +311,6 @@ namespace versos
           v.remove(*it);
     }
 
-    // TODO: throw an exception if a rank added/removed the same object
+    // TODO: throw an exception if two or more ranks added/removed the same object
   }
 }
