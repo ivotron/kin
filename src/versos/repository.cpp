@@ -1,10 +1,15 @@
 #include "versos/repository.h"
 
 #include "versos/options.h"
+
 #include "versos/coordination/singleclientcoordinator.h"
-#include "versos/coordination/mpicoordinator.h"
+
+#ifdef ENABLE_MPI_COORDINATOR
+  #include "versos/coordination/mpicoordinator.h"
+#endif
 
 #include "versos/refdb/memrefdb.h"
+#include "versos/refdb/redisrefdb.h"
 
 #include <stdexcept>
 
@@ -14,6 +19,8 @@ namespace versos
   {
     if (o.metadb_type == Options::MetaDB::MEM)
       refdb = new MemRefDB(name + "_metadb");
+    else if (o.metadb_type == Options::MetaDB::REDIS)
+      refdb = new RedisRefDB(name + "_metadb", o);
     else
       throw std::runtime_error("unknown metadb class");
 
@@ -28,8 +35,10 @@ namespace versos
 
     if (o.coordinator_type == Options::Coordinator::SINGLE_CLIENT)
       coordinator = new SingleClientCoordinator(*refdb, o);
+#ifdef ENABLE_MPI_COORDINATOR
     else if (o.coordinator_type == Options::Coordinator::MPI)
       coordinator = new MpiCoordinator(*refdb, o);
+#endif
     else
       throw std::runtime_error("unknown coordinator class");
 

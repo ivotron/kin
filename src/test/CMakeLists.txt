@@ -10,14 +10,17 @@ IF (ENABLE_MPI_COORDINATOR)
   IF (!MPI_C_FOUND)
     MESSAGE (FATAL_ERROR "MPI required")
   ENDIF ()
+  IF (!Boost_MPI_FOUND)
+    MESSAGE (FATAL_ERROR "Boost_MPI required")
+  ENDIF ()
 ENDIF()
 
 IF (!OPENSSL_FOUND)
   MESSAGE (FATAL_ERROR "OpenSSL required")
 ENDIF ()
 
-IF (!Boost_FOUND)
-  MESSAGE (FATAL_ERROR "Boost required")
+IF (!Boost_SERIALIZATION_FOUND)
+  MESSAGE (FATAL_ERROR "Boost_SERIALIZATION required")
 ENDIF ()
 
 IF (NOT TARGET versos)
@@ -35,10 +38,10 @@ INCLUDE_DIRECTORIES ("gmock/gtest/include")
 
 SET (GTEST_FLAGS "--gtest_break_on_failure")
 
-SET (DEP_LIBRARIES gtest gtest_main gmock gmock_main ${OPENSSL_LIBRARIES})
+SET (DEP_LIBRARIES gtest gtest_main gmock gmock_main ${OPENSSL_LIBRARIES} ${Boost_SERIALIZATION_LIBRARY})
 
 IF (ENABLE_MPI_COORDINATOR)
-  SET(DEP_LIBRARIES ${DEP_LIBRARIES} ${MPI_LIBRARIES} ${Boost_LIBRARIES})
+  SET(DEP_LIBRARIES ${DEP_LIBRARIES} ${MPI_LIBRARIES} ${Boost_MPI_LIBRARY})
 ENDIF()
 
 #------------------------------------------------------------------------------
@@ -81,6 +84,7 @@ ENDIF()
 
 BUILD_AND_ADD_TEST (repository_test "repository_test.cpp")
 BUILD_AND_ADD_TEST (memrefdb_test "refdb/memrefdb_test.cpp")
+BUILD_AND_ADD_TEST (redisrefdb_test "refdb/redisrefdb_test.cpp")
 BUILD_AND_ADD_TEST (singleclientcoordinator_test "coordination/singleclientcoordinator_test.cpp")
 
 IF (ENABLE_MPI_COORDINATOR)
