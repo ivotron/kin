@@ -9,6 +9,7 @@ BOOST_CLASS_EXPORT_IMPLEMENT(versos::RadosVersionedObject);
 
 namespace versos
 {
+  librados::IoCtx RadosVersionedObject::forDefaultConstructor;
 
   RadosVersionedObject::RadosVersionedObject() :
     VersionedObject("rados", repoName, baseName), ioctx(forDefaultConstructor)

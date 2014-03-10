@@ -6,11 +6,21 @@ PROJECT (versos)
 # Dependencies
 ###############
 
-# Boost
+# Core
+
+## Boost
 FIND_PACKAGE (Boost 1.46 COMPONENTS serialization REQUIRED)
 INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIRS})
 
-# MPI
+## OpenSSL
+FIND_PACKAGE (OpenSSL REQUIRED)
+INCLUDE_DIRECTORIES (${OPENSSL_INCLUDE_DIR})
+
+# Optional
+
+SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+
+## MPI
 IF (ENABLE_MPI_COORDINATOR)
   FIND_PACKAGE (MPI REQUIRED)
   INCLUDE_DIRECTORIES (${MPI_C_INCLUDE_PATH})
@@ -19,39 +29,46 @@ IF (ENABLE_MPI_COORDINATOR)
   ADD_DEFINITIONS(-DENABLE_MPI_COORDINATOR)
 ENDIF()
 
-# OpenSSL
-FIND_PACKAGE (OpenSSL REQUIRED)
-INCLUDE_DIRECTORIES (${OPENSSL_INCLUDE_DIR})
-
-# Ceph
-SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
-FIND_PACKAGE (RADOS REQUIRED)
-INCLUDE_DIRECTORIES (${RADOS_INCLUDE_DIRS})
+## Ceph
+IF (ENABLE_RADOS_OBJECT)
+  FIND_PACKAGE (RADOS REQUIRED)
+  INCLUDE_DIRECTORIES (${RADOS_INCLUDE_DIRS})
+  ADD_DEFINITIONS(-DENABLE_RADOS_OBJECT)
+ENDIF()
 
 ###############
-# Libs
+# Source
 ###############
 
-INCLUDE_DIRECTORIES ("src/")
+# Core
 
 SET(VERSOS_SRC
   "src/versos/version.cpp"
   "src/versos/repository.cpp"
   "src/versos/refdb/refdb.cpp"
   "src/versos/refdb/memrefdb.cpp"
-  "src/versos/refdb/rediswrapper.cpp"
-  "src/versos/refdb/redisrefdb.cpp"
   "src/versos/coordination/singleclientcoordinator.cpp"
   "src/versos/objectversioning/versionedobject.cpp"
-  "src/versos/objectversioning/memversionedobject.cpp"
-  "src/versos/objectversioning/radosversionedobject.cpp"
-)
+  "src/versos/objectversioning/memversionedobject.cpp")
 
-IF (ENABLE_MPI_COORDINATOR)
-  SET(VERSOS_SRC ${VERSOS_SRC} "src/versos/coordination/mpicoordinator.cpp")
+# Optional
+
+IF (ENABLE_RADOS_OBJECT)
+  SET(VERSOS_SRC ${VERSOS_SRC}
+    "src/versos/objectversioning/radosversionedobject.cpp")
 ENDIF()
 
+IF (ENABLE_MPI_COORDINATOR)
+  SET(VERSOS_SRC ${VERSOS_SRC}
+    "src/versos/coordination/mpicoordinator.cpp")
+ENDIF()
+
+INCLUDE_DIRECTORIES ("src/")
 ADD_LIBRARY (versos ${VERSOS_SRC})
+
+#######################
+# Tests
+#######################
 
 OPTION (ENABLE_TESTS "Build all tests." OFF)
 

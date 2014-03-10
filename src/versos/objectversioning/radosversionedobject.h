@@ -1,6 +1,7 @@
 /**
  * versioned object implementation for RADOS.
  */
+#ifdef ENABLE_RADOS_OBJECT
 
 #ifndef RADOS_VERSIONED_OBJECT_H
 #define RADOS_VERSIONED_OBJECT_H
@@ -43,4 +44,5 @@ namespace versos
     virtual VersionedObject* do_clone() const;
   };
 }
-#endif
+#endif // RADOS_VERSIONED_OBJECT_H
+#endif // ENABLE_RADOS_OBJECT
