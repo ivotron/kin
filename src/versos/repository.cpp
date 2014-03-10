@@ -2,6 +2,7 @@
 
 #include "versos/options.h"
 
+// coordinators
 #include "versos/coordination/singleclientcoordinator.h"
 #include "versos/coordination/backendcoordinator.h"
 
@@ -9,7 +10,12 @@
   #include "versos/coordination/mpicoordinator.h"
 #endif
 
+// metadata backends
 #include "versos/refdb/memrefdb.h"
+
+#ifdef ENABLE_REDIS_METADB
+  #include "versos/refdb/redisrefdb.h"
+#endif
 
 #include <stdexcept>
 
@@ -19,6 +25,10 @@ namespace versos
   {
     if (o.metadb_type == Options::MetaDB::MEM)
       refdb = new MemRefDB(name + "_metadb");
+#ifdef ENABLE_REDIS_METADB
+    else if (o.metadb_type == Options::MetaDB::REDIS)
+      refdb = new RedisRefDB(name + "_metadb", o);
+#endif
     else
       throw std::runtime_error("unknown metadb class");
 

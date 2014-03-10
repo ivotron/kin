@@ -1,3 +1,5 @@
+#ifdef ENABLE_REDIS_METADB
+
 #ifndef REDISREFDB_H
 #define REDISREFDB_H
 
@@ -30,14 +32,19 @@ namespace versos
      * decreases the shared lock count and returns the new value.
      */
     int commit(const Version& v);
+    int getLockCount(const Version& v, const std::string& id);
+    int release(const Version& v, const std::string& id);
     const Version& checkout(const std::string& id);
     int remove(const Version& v);
-    int addAll(const Version& v);
+    int add(const Version& v, const boost::ptr_set<VersionedObject>& o);
     int add(const Version& v, const VersionedObject& o);
     int remove(const Version& v, const VersionedObject& o);
+    int remove(const Version& v, const boost::ptr_set<VersionedObject>& o);
   protected:
     int own(boost::shared_ptr<Version> v, LockType lock, const std::string& lockKey);
+  private:
+    int getLockCount(const std::string& id);
   };
 }
 #endif
-
+#endif

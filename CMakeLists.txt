@@ -36,6 +36,13 @@ IF (ENABLE_RADOS_OBJECT)
   ADD_DEFINITIONS(-DENABLE_RADOS_OBJECT)
 ENDIF()
 
+## HiRedis
+IF (ENABLE_REDIS_METADB)
+  FIND_PACKAGE (HiRedis REQUIRED)
+  INCLUDE_DIRECTORIES (${LIBHIREDIS_INCLUDE_DIRS})
+  ADD_DEFINITIONS(-DENABLE_REDIS_METADB)
+ENDIF()
+
 ###############
 # Source
 ###############
@@ -62,6 +69,12 @@ ENDIF()
 IF (ENABLE_MPI_COORDINATOR)
   SET(VERSOS_SRC ${VERSOS_SRC}
     "src/versos/coordination/mpicoordinator.cpp")
+ENDIF()
+
+IF (ENABLE_REDIS_METADB)
+  SET(VERSOS_SRC ${VERSOS_SRC}
+    "src/versos/refdb/rediswrapper.cpp"
+    "src/versos/refdb/redisrefdb.cpp")
 ENDIF()
 
 INCLUDE_DIRECTORIES ("src/")

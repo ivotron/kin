@@ -2,8 +2,12 @@
 
 #include "versos/version.h"
 #include "versos/options.h"
+#include "versos/utils.h"
+
+#include "versos/objectversioning/versionedobject.h"
 
 #include <boost/serialization/shared_ptr.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace versos
 {
@@ -13,6 +17,7 @@ namespace versos
  * redis keys/datatypes used:
  *   - @c <repoName>_metadb = string
  *   - @c <repoName>_head = string
+ *   - @c <repoName>_<version_id>_parent = string
  *   - @c <repoName>_<version_id>_counter = string as int (a.k.a. counter)
  *   - @c <repoName>_<version_id>_objects = set
  *
@@ -76,19 +81,30 @@ int RedisRefDB::makeHEAD(const Version& v)
   // {
   if (v.getParentId() != getHeadId())
     return -54;
-
-  // TODO: "exec SET repoName_head = v.getId()"
-
+  redisdb.set(repoName + "_head", v.getId());
   // }
+
+  redisdb.set(repoName + "_" + v.getId() + "_parent", v.getParentId());
 
   return 0;
 }
 
-int RedisRefDB::commit(const Version&)
+int RedisRefDB::commit(const Version& v)
 {
-  // return "exec DECR v.getId()_counter"
+  return redisdb.decr(repoName + "_" + v.getId() + "_counter");
+}
 
-  return 0;
+int RedisRefDB::getLockCount(const Version& v, const std::string&)
+{
+  // TODO: check lock key
+  return getLockCount(v.getId());
+}
+
+int RedisRefDB::getLockCount(const std::string& id)
+{
+  std::string getted = redisdb.get(repoName + "_" + id + "_counter");
+  std::cout << "getted: " << getted << std::endl << std::flush;
+  return boost::lexical_cast<int>(getted);
 }
 
 const Version& RedisRefDB::checkout(const std::string& id)
@@ -98,26 +114,98 @@ const Version& RedisRefDB::checkout(const std::string& id)
   if (v.isOK())
     return v;
 
-  // TODO: read and instantiate the version
+  if (getLockCount(id) != 0)
+    // not committed
+    return Version::ERROR;
 
-  return Version::NOT_FOUND;
+  std::string parentId = redisdb.get(repoName + "_" + id + "_parent");
+  std::list<std::string> objIds = redisdb.lrange(repoName + "_" + id + "_objects 0 -1");
+  boost::ptr_set<VersionedObject> objects;
+
+  for(std::list<std::string>::iterator it = objIds.begin(); it != objIds.end(); ++it)
+  {
+    std::vector<std::string> objectMeta = Utils::split(*it, '_');
+
+    if (objectMeta.size() != 3)
+      throw std::runtime_error("Expecting 3 elements but got " + objectMeta.size());
+
+    objects.insert(new VersionedObject(objectMeta[0], objectMeta[1], objectMeta[2]));
+  }
+
+  Version* checkedOutVersion = new Version(id, parentId, objects);
+
+  MemRefDB::add(boost::shared_ptr<Version>(checkedOutVersion));
+
+  return *checkedOutVersion;
 }
 
-int RedisRefDB::add(const Version&, const VersionedObject&)
+int RedisRefDB::add(const Version& v, const VersionedObject& o)
 {
-  // TODO: add to set, fail if 0 is returned
+  std::string oid;
+
+  if (o.getId(v, oid))
+    return -103;
+
+  if (redisdb.sadd(repoName + "_" + v.getId() + "_objects", oid) != 1)
+    return -104;
+
   return 0;
 }
 
-int RedisRefDB::remove(const Version&, const VersionedObject&)
+int RedisRefDB::remove(const Version& v, const VersionedObject& o)
 {
-  // TODO: remove from set, fail if 0 is returned
+  std::string oid;
+
+  if (o.getId(v, oid))
+    return -103;
+
+  if (redisdb.srem(repoName + "_" + v.getId() + "_objects", oid) != 1)
+    return -104;
+
   return 0;
 }
 
-int RedisRefDB::addAll(const Version&)
+int RedisRefDB::add(const Version& v, const boost::ptr_set<VersionedObject>& o)
 {
-  // TODO: add and return number of added objects
+  std::list<std::string> ids;
+
+  boost::ptr_set<VersionedObject>::iterator it;
+
+  for (it = o.begin(); it != o.end(); ++it)
+  {
+    std::string oid;
+
+    if (it->getId(v, oid))
+      return -103;
+
+    ids.push_back(oid);
+  }
+
+  if (redisdb.sadd(repoName + "_" + v.getId() + "_objects", ids) != (long long) ids.size())
+    return -105;
+
+  return 0;
+}
+
+int RedisRefDB::remove(const Version& v, const boost::ptr_set<VersionedObject>& o)
+{
+  std::list<std::string> ids;
+
+  boost::ptr_set<VersionedObject>::iterator it;
+
+  for (it = o.begin(); it != o.end(); ++it)
+  {
+    std::string oid;
+
+    if (it->getId(v, oid))
+      return -103;
+
+    ids.push_back(oid);
+  }
+
+  if (redisdb.srem(repoName + "_" + v.getId() + "_objects", ids) != (long long) ids.size())
+    return -105;
+
   return 0;
 }
 
@@ -126,14 +214,14 @@ int RedisRefDB::remove(const Version& )
   return -108;
 }
 
-int RedisRefDB::own(boost::shared_ptr<Version> v, LockType lock, const std::string& lockKey)
+int RedisRefDB::own(boost::shared_ptr<Version> v, LockType lock, const std::string&)
 {
   if (lock == RefDB::EXCLUSIVE_LOCK)
     return -109;
 
-  // TODO: Increase create repoName_versionId_counter key
+  redisdb.incr(repoName + "_" + v->getId() + "_counter");
 
-  MemRefDB::own(v, lock, lockKey);
+  MemRefDB::add(v);
 
   return 0;
 }

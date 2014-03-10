@@ -23,6 +23,12 @@ IF (!Boost_SERIALIZATION_FOUND)
   MESSAGE (FATAL_ERROR "Boost_SERIALIZATION required")
 ENDIF ()
 
+IF (ENABLE_REDIS_METADB)
+  IF (!LIBHIREDIS_FOUND)
+    MESSAGE (FATAL_ERROR "libhiredis required")
+  ENDIF ()
+ENDIF ()
+
 IF (NOT TARGET versos)
   MESSAGE (FATAL_ERROR "versos target not found")
 ENDIF ()
@@ -39,6 +45,10 @@ INCLUDE_DIRECTORIES ("gmock/gtest/include")
 SET (GTEST_FLAGS "--gtest_break_on_failure")
 
 SET (DEP_LIBRARIES gtest gtest_main gmock gmock_main ${OPENSSL_LIBRARIES} ${Boost_SERIALIZATION_LIBRARY})
+
+IF (ENABLE_REDIS_METADB)
+  SET(DEP_LIBRARIES ${DEP_LIBRARIES} ${LIBHIREDIS_LIBRARIES})
+ENDIF ()
 
 IF (ENABLE_MPI_COORDINATOR)
   SET(DEP_LIBRARIES ${DEP_LIBRARIES} ${MPI_LIBRARIES} ${Boost_MPI_LIBRARY})
@@ -86,6 +96,10 @@ BUILD_AND_ADD_TEST (repository_test "repository_test.cpp")
 BUILD_AND_ADD_TEST (memrefdb_test "refdb/memrefdb_test.cpp")
 BUILD_AND_ADD_TEST (singleclientcoordinator_test "coordination/singleclientcoordinator_test.cpp")
 BUILD_AND_ADD_TEST (backendcoordinator_test "coordination/backendcoordinator_test.cpp")
+
+IF (ENABLE_REDIS_METADB)
+  BUILD_AND_ADD_TEST (redisrefdb_test "refdb/redisrefdb_test.cpp")
+ENDIF()
 
 IF (ENABLE_MPI_COORDINATOR)
   BUILD_AND_ADD_MPI_TEST(mpicoordinator_test "coordination/mpicoordinator_test.cpp" 2 4 8 16)

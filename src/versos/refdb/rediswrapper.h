@@ -5,12 +5,13 @@
  *
  * with modifications/extensions
  */
+#if defined(ENABLE_REDIS_METADB) || defined(ENABLE_REDIS_OBJECT)
+
 #ifndef REDISWRAPPER_H
 #define REDISWRAPPER_H
 
 #include <iostream>
-
-#include <boost/scoped_ptr.hpp>
+#include <list>
 
 struct redisContext;
 
@@ -19,7 +20,7 @@ namespace redis
 class DB
 {
 private:
-  boost::scoped_ptr<redisContext> ctx;
+  redisContext* ctx;
 public:
   DB();
   ~DB();
@@ -29,7 +30,19 @@ public:
   void connect(const std::string& host, int port) throw();
   void disconnect();
   void set(const std::string& key, const std::string& value) const throw();
+  long long incr(const std::string& key) const throw();
+  long long decr(const std::string& key) const throw();
+  long long sadd(const std::string& key, const std::string& value) const throw();
+  long long sadd(const std::string& key, const std::list<std::string>& values) const throw();
+  long long srem(const std::string& key, const std::string& value) const throw();
+  long long srem(const std::string& key, const std::list<std::string>& values) const throw();
+  std::list<std::string> lrange(const std::string&) const throw();
   std::string get(const std::string& key) const throw();
 };
+
+// TODO:
+//   - sanity checks for passed keys (we call c_str())
+
 } // namespace Redis
-#endif
+#endif // _H
+#endif // ENABLE_
