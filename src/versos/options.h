@@ -66,17 +66,21 @@ namespace versos
      * words, the refdb only stores the parent-child relationship of versions but not of what each version 
      * contains.
      *
-     * @c AT_EACH_COMMIT synchronizes information right after a version has been committed, that is, after the 
-     * user executes @c Repository::commit().
+     * @c AT_CREATE synchronizes information right after a version has been created, that is, after a 
+     * ::Repository::create
      *
-     * @c AT_EACH_ADD_OR_REMOVE synchronizes every time an application adds or removes an object from a 
-     * revision, i.e. after every @c Repository::add() or @c Repository::remove().
+     * @c AT_COMMIT synchronizes information right after a version has been committed, that is, after the user 
+     * executes ::Repository::commit.
+     *
+     * @c AT_ADD_OR_REMOVE synchronizes every time an application adds or removes an object from a revision, 
+     * i.e. after every @c Repository::add() or @c Repository::remove().
      *
      * Default: @c ClienSync::AT_EACH_COMMIT
      */
     struct ClientSync {
       enum Mode {
         NONE,
+        AT_CREATE,
         AT_EACH_COMMIT,
         AT_EACH_ADD_OR_REMOVE
       };

@@ -60,6 +60,14 @@ namespace versos
     return v;
   }
 
+  int MemRefDB::add(const Version&, const boost::ptr_set<VersionedObject>&)
+  {
+    return 0;
+  }
+  int MemRefDB::remove(const Version&, const boost::ptr_set<VersionedObject>&)
+  {
+    return 0;
+  }
   int MemRefDB::add(const Version&, const VersionedObject&)
   {
     return 0;
@@ -67,19 +75,6 @@ namespace versos
 
   int MemRefDB::remove(const Version&, const VersionedObject&)
   {
-    return 0;
-  }
-
-  int MemRefDB::addAll(const Version&)
-  {
-    return 0;
-  }
-
-  int MemRefDB::remove(const Version& uncommitted)
-  {
-    if (revisions.erase(uncommitted.getId()) != 1)
-      return -52;
-
     return 0;
   }
 

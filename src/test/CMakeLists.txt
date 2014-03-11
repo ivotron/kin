@@ -55,14 +55,14 @@ ENDMACRO ()
 
 MACRO (BUILD_AND_ADD_TEST bin_name src_name)
   BUILD_TEST(${bin_name} ${src_name})
-  ADD_TEST(${bin_name} ${bin_name} ${GTEST_FLAG})
+  ADD_TEST(${bin_name} ${bin_name} ${GTEST_FLAGS})
 ENDMACRO()
 
 IF (ENABLE_MPI_COORDINATOR)
 
   MACRO (ADD_MPI_TEST test_name np)
     ADD_TEST (NAME ${test_name}_${np} COMMAND ${MPIEXEC} ${MPIEXEC_PREFLAGS}
-          ${MPIEXEC_NUMPROC_FLAG} ${np} ${MPIEXEC_POSTFLAGS} $<TARGET_FILE:${test_name}> ${GTEST_FLAG})
+          ${MPIEXEC_NUMPROC_FLAG} ${np} ${MPIEXEC_POSTFLAGS} $<TARGET_FILE:${test_name}> ${GTEST_FLAGS})
   ENDMACRO ()
 
   MACRO (BUILD_AND_ADD_MPI_TEST bin_name src_name np_vararg)
@@ -84,7 +84,6 @@ ENDIF()
 
 BUILD_AND_ADD_TEST (repository_test "repository_test.cpp")
 BUILD_AND_ADD_TEST (memrefdb_test "refdb/memrefdb_test.cpp")
-BUILD_AND_ADD_TEST (redisrefdb_test "refdb/redisrefdb_test.cpp")
 BUILD_AND_ADD_TEST (singleclientcoordinator_test "coordination/singleclientcoordinator_test.cpp")
 
 IF (ENABLE_MPI_COORDINATOR)

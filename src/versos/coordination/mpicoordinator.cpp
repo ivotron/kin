@@ -111,6 +111,7 @@ namespace versos
           handleError(-61);
 
         parentId = leaderV.getParentId();
+        objects = leaderV.getObjects();
       }
 
       broadcast(parentId);
@@ -193,15 +194,15 @@ namespace versos
     if (syncMode == Options::ClientSync::AT_EACH_COMMIT)
       allGather(v);
 
-    // if (syncMode == Options::ClientSync::NONE)
+    if (imLeader())
+    {
+      // if (syncMode == Options::ClientSync::NONE)
       // TODO: leader doesn't know about objects in each rank, so each rank has to call o.commit(v)
       //       the problem is that we don't have the references to those objects, so the user has to do that 
       //       on his/her own. We can enforce this by checking if the object being committed (locally) has 
       //       been committed in the objectstore (by adding some sort of ::VersionedObject::isCommited() 
       //       method
 
-    if (imLeader())
-    {
       int ret = SingleClientCoordinator::commit(v);
 
       if (ret)
@@ -209,8 +210,6 @@ namespace versos
     }
 
     v.setStatus(Version::COMMITTED);
-
-    barrier();
 
     return 0;
   }

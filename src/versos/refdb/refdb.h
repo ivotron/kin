@@ -3,6 +3,7 @@
 
 #include <string>
 #include <boost/shared_ptr.hpp>
+#include <boost/ptr_container/ptr_set.hpp>
 
 namespace versos
 {
@@ -15,7 +16,6 @@ namespace versos
   {
   public:
     enum LockType { EXCLUSIVE_LOCK, SHARED_LOCK };
-    // TODO: enum CommitStatusCheck { DONT_CHECK_FOR_COMMIT_STATUS, CHECK_FOR_COMMIT_STATUS };
 
   protected:
     std::string repoName;
@@ -41,7 +41,7 @@ namespace versos
     /**
      * inits a new db. Might fail if the db has been initialized previously
      */
-    int init();
+    virtual int init();
 
     /**
      * opens the db.
@@ -64,11 +64,9 @@ namespace versos
     virtual int makeHEAD(const Version& v) = 0;
 
     /**
-     * marks the given version as committed.
+     * changes the status of a version stored at the backed to Version::COMMITTED.
      */
     virtual int commit(const Version& v) = 0;
-
-    // TODO: int get(Version& v, set<Obj> objects);
 
     /**
      * modifies the version stored in the db so that it adds an object to it. While we have the guarantee that 
@@ -83,7 +81,15 @@ namespace versos
      * this method might fail if the remote version being updated has been committed externally (i.e. not 
      * through an instance of this object).
      */
-    virtual int addAll(const Version& v) = 0;
+    virtual int add(const Version& v, const boost::ptr_set<VersionedObject>& o) = 0;
+
+    /**
+     * modifies the version stored in the db so that metadata of all objects of the given version are added to 
+     * it. While we have the guarantee that the given @c Version object has been already checked for OKness, 
+     * this method might fail if the remote version being updated has been committed externally (i.e. not 
+     * through an instance of this object).
+     */
+    virtual int remove(const Version& v, const boost::ptr_set<VersionedObject>& o) = 0;
 
     /**
      * modifies the version stored in the db so that it removes an object from it. While we have the guarantee 
@@ -98,11 +104,6 @@ namespace versos
      * Version::NOT_FOUND if the version doesn't exist in the db.
      */
     virtual const Version& checkout(const std::string& id) = 0;
-
-    /**
-     * removes the given version from the DB and frees memory of the @c Version object.
-     */
-    virtual int remove(const Version& v) = 0;
 
   protected:
     /**

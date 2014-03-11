@@ -41,11 +41,12 @@ namespace versos
     for (it = v.getParents().begin(); it != v.getParents().end(); ++it)
     {
       if (it->create(parent, v))
-      {
-        refdb.remove(v);
         return Version::ERROR;
-      }
     }
+
+    if (syncMode == Options::ClientSync::AT_CREATE)
+      if (refdb.add(v, v.getParents()))
+        return Version::ERROR;
 
     return v;
   }

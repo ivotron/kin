@@ -7,16 +7,15 @@
 
 // NOTE: this has to include the actual archives that are to be used ANYWHERE in the library, otherwise a 
 // runtime exception is thrown by boost. So if a coordinator uses a binary archive, it has to be included 
-// here. If another one uses text archives, it has to be included here, and so on.
+// here. If another one uses text archives, it has to be included here, and so on. We include text by default 
+// wince those are platform independent
 // {
 #ifdef ENABLE_MPI_COORDINATOR
   #include <boost/mpi/packed_oarchive.hpp>
   #include <boost/mpi/packed_iarchive.hpp>
 #endif
-//#include <boost/archive/binary_oarchive.hpp>
-//#include <boost/archive/binary_iarchive.hpp>
-//#include <boost/archive/text_oarchive.hpp>
-//#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 // }
 #include <boost/noncopyable.hpp>
 #include <boost/serialization/access.hpp>
