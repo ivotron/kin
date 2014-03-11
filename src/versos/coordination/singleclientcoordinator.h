@@ -5,13 +5,13 @@
 #include "versos/coordination/coordinator.h"
 
 #include "versos/options.h"
+#include "versos/refdb/refdb.h"
 
 #ifndef SINGLE_CLIENT_COORDINATOR_H
 #define SINGLE_CLIENT_COORDINATOR_H
 
 namespace versos
 {
-  class RefDB;
   class Version;
 
   class SingleClientCoordinator : public Coordinator
@@ -35,6 +35,9 @@ namespace versos
     int initRepository();
     bool isRepositoryEmpty();
     int shutdown();
+
+    // added
+    Version& create(const Version& parent, RefDB::LockType lockMode, const std::string& lockKey);
   };
 }
 #endif

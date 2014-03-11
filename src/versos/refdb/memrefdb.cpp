@@ -47,6 +47,11 @@ namespace versos
     return 0;
   }
 
+  int MemRefDB::getLockCount(const Version&, const std::string&)
+  {
+    return -1;
+  }
+
   const Version& MemRefDB::checkout(const std::string& id)
   {
     if (revisions.find(id) == revisions.end())

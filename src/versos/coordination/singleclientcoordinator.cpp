@@ -31,16 +31,24 @@ namespace versos
 
   Version& SingleClientCoordinator::create(const Version& parent)
   {
-    Version& v = refdb.create(parent, hashSeed);
+    return create(parent, RefDB::EXCLUSIVE_LOCK, "singleClient");
+  }
+
+  Version& SingleClientCoordinator::create(const Version& parent, RefDB::LockType lock, const std::string& key)
+  {
+    if (syncMode == Options::ClientSync::NONE && parent.size() != 0)
+      return Version::ERROR;
+
+    Version& v = refdb.create(parent, hashSeed, lock, key);
 
     if (v == Version::ERROR)
       return v;
 
-    boost::ptr_set<VersionedObject>::iterator it;
+    boost::ptr_set<VersionedObject>::iterator o;
 
-    for (it = v.getParents().begin(); it != v.getParents().end(); ++it)
+    for (o = v.getParents().begin(); o != v.getParents().end(); ++o)
     {
-      if (it->create(parent, v))
+      if (o->create(parent, v))
         return Version::ERROR;
     }
 
@@ -62,7 +70,16 @@ namespace versos
     if (v.isCommitted())
       return -2;
 
-    v.add(o);
+    int ret = v.add(o);
+
+    if (ret)
+      return ret;
+
+    if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
+      ret = refdb.add(v, o);
+
+    if (ret)
+      return ret;
 
     return o.create(checkout(v.getParentId()), v);
   }
@@ -79,6 +96,12 @@ namespace versos
       return -2;
 
     int ret = o.remove(v);
+
+    if (ret)
+      return ret;
+
+    if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
+      ret = refdb.remove(v, o);
 
     if (ret)
       return ret;
@@ -103,16 +126,24 @@ namespace versos
     boost::ptr_set<VersionedObject>::iterator o;
 
     for (o = objects.begin(); o != objects.end(); ++o)
-      if (o->commit(v))
+    {
+      int ret = o->commit(v);
+
+      if (ret)
         return -22;
+    }
+
+    if (syncMode == Options::ClientSync::AT_EACH_COMMIT)
+    {
+      int ret = refdb.add(v, v.getObjects());
+
+      if (ret)
+        return ret;
+    }
 
     v.setStatus(Version::COMMITTED);
 
-    int ret = refdb.commit(v);
-    if (ret)
-      return ret;
-
-    return 0;
+    return refdb.commit(v);
   }
 
   int SingleClientCoordinator::initRepository()

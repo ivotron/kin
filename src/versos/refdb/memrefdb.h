@@ -25,6 +25,7 @@ namespace versos
     int close();
     bool isEmpty() const;
     int commit(const Version& v);
+    int getLockCount(const Version& v, const std::string& id);
     int makeHEAD(const Version& v);
     const Version& checkout(const std::string& id);
     int add(const Version& v, const boost::ptr_set<VersionedObject>& o);

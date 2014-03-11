@@ -29,6 +29,8 @@ namespace versos
 
     if (o.coordinator_type == Options::Coordinator::SINGLE_CLIENT)
       coordinator = new SingleClientCoordinator(*refdb, o);
+    else if (o.coordinator_type == Options::Coordinator::BACKEND)
+      coordinator = new BackendCoordinator(*refdb, o);
 #ifdef ENABLE_MPI_COORDINATOR
     else if (o.coordinator_type == Options::Coordinator::MPI)
       coordinator = new MpiCoordinator(*refdb, o);
