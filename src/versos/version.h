@@ -46,6 +46,7 @@ namespace versos
     boost::ptr_set<VersionedObject> removedObjects;
 
   public:
+    Version(const Version& copy);
     Version(const std::string& id, const Version& parent);
     Version(
         const std::string& id, const std::string parentId, const boost::ptr_set<VersionedObject>& 

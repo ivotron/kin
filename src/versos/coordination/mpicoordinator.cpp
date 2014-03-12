@@ -2,7 +2,6 @@
 
 #include "versos/version.h"
 #include "versos/objectversioning/versionedobject.h"
-#include "versos/refdb/refdb.h"
 
 #include <sstream>
 #include <stdexcept>
@@ -10,13 +9,10 @@
 
 #include <mpi.h>
 
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
 #include <boost/mpi/collectives.hpp>
 #include <boost/mpi/environment.hpp>
 #include <boost/ptr_container/ptr_set.hpp>
 #include <boost/ptr_container/serialize_ptr_set.hpp>
-#include <boost/serialization/serialization.hpp>
 
 /* high-level description of the implementation:
  *
@@ -120,15 +116,15 @@ namespace versos
 
     // add it to the local db
     {
-      Version* v = new Version(id, parentId, objects);
+      Version v(id, parentId, objects);
 
       // add to local db
-      int ret = localRefDB.add(boost::shared_ptr<Version>(v));
+      int ret = localRefDB.add(v);
 
       if (ret)
         handleError(ret);
 
-      return *v;
+      return localRefDB.checkout(id);
     }
   }
 

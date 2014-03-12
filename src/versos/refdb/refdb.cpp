@@ -23,12 +23,12 @@ namespace versos
 
   int RefDB::init()
   {
-    boost::shared_ptr<Version> v(new Version(Version::PARENT_FOR_ROOT));
+    Version v(Version::PARENT_FOR_ROOT);
 
-    if (own(v))
+    if (insert(v))
       return -80;
 
-    headId = v->getId();
+    headId = v.getId();
 
     return 0;
   }
@@ -37,6 +37,16 @@ namespace versos
   {
     return headId;
   };
+
+  const Version& RefDB::checkout(const std::string& id)
+  {
+    Version& v = get(id);
+
+    if (!v.isCommitted())
+      return Version::ERROR;
+
+    return v;
+  }
 
   Version& RefDB::create(const Version& parent, const std::string& hashSeed)
   {
@@ -61,16 +71,16 @@ namespace versos
       ss << std::hex << std::setw(2) << std::setfill('0') << (int)childSHA1[i];
 
     // instantiate
-    boost::shared_ptr<Version> v(new Version(ss.str(), parent));
+    Version v(ss.str(), parent);
 
-    if (own(v, lock, lockKey))
+    if (insert(v, lock, lockKey))
       return Version::ERROR;
 
-    return *v;
+    return get(v.getId());
   }
 
-  int RefDB::own(boost::shared_ptr<Version> v)
+  int RefDB::insert(Version& v)
   {
-    return own(v, EXCLUSIVE_LOCK, "");
+    return insert(v, EXCLUSIVE_LOCK, "");
   }
 }

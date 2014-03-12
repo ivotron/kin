@@ -55,12 +55,7 @@ namespace versos
 
   const Version& Repository::checkout(const std::string& id) const
   {
-    const Version& v = coordinator->checkout(id);
-
-    if (!v.isCommitted())
-      return Version::ERROR;
-
-    return v;
+    return coordinator->checkout(id);
   }
 
   const Version& Repository::checkoutHEAD() const

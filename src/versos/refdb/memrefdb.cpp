@@ -3,8 +3,6 @@
 #include "versos/version.h"
 #include "versos/objectversioning/versionedobject.h"
 
-#include <boost/serialization/shared_ptr.hpp>
-
 namespace versos
 {
   // most of the functions are empty since we're backend-less
@@ -42,27 +40,27 @@ namespace versos
     return 0;
   }
 
-  int MemRefDB::commit(const Version&)
+  int MemRefDB::commit(const Version& v)
   {
-    return 0;
+    if (locks.find(v.getId()) == locks.end())
+      return -55;
+
+    locks[v.getId()] = locks[v.getId()] - 1;
+
+    return locks[v.getId()];
   }
 
-  int MemRefDB::getLockCount(const Version&, const std::string&)
+  int MemRefDB::getLockCount(const Version& v, const std::string&)
   {
-    return -1;
+    return locks[v.getId()];
   }
 
-  const Version& MemRefDB::checkout(const std::string& id)
+  Version& MemRefDB::get(const std::string& id)
   {
     if (revisions.find(id) == revisions.end())
       return Version::NOT_FOUND;
 
-    const Version& v = *(revisions.find(id)->second);
-
-    if (!v.isCommitted())
-      return Version::ERROR;
-
-    return v;
+    return *(revisions.find(id)->second);
   }
 
   int MemRefDB::add(const Version&, const boost::ptr_set<VersionedObject>&)
@@ -83,22 +81,25 @@ namespace versos
     return 0;
   }
 
-  int MemRefDB::add(boost::shared_ptr<Version> v)
+  int MemRefDB::add(Version& v)
   {
-    return RefDB::own(v);
+    return RefDB::insert(v);
   }
 
-  int MemRefDB::own(boost::shared_ptr<Version> v, LockType lock, const std::string&)
+  int MemRefDB::insert(Version& v, LockType lock, const std::string&)
   {
-    if (lock == SHARED_LOCK)
-      // can't be shared
-      return -56;
+    if (lock == EXCLUSIVE_LOCK)
+    {
+      if (locks[v.getId()] != 0)
+        return -56;
 
-    if (revisions.find(v->getId()) != revisions.end())
-      // re-adding an already-added version; or (very unlikely) there is a hash collision
-      return -57;
+      if (revisions.find(v.getId()) != revisions.end())
+        return -57;
+    }
 
-    revisions[v->getId()] = v;
+    locks[v.getId()] = locks[v.getId()] + 1;
+
+    revisions[v.getId()] = boost::shared_ptr<Version>(new Version(v));
 
     return 0;
   }

@@ -13,6 +13,12 @@ namespace versos
   {
   }
 
+  Version::Version(const Version& copy) :
+    id(copy.id), parentId(copy.parentId), status(copy.status), parentObjects(copy.parentObjects), 
+    addedObjects(copy.addedObjects), removedObjects(copy.removedObjects)
+  {
+  }
+
   Version::Version(const std::string& id) : id(id), parentId(""), status(Version::NONE)
   {
     if (id == "0000000000000000000000000000000000000003")

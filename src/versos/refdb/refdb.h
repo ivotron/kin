@@ -2,7 +2,6 @@
 #define REFDB_H
 
 #include <string>
-#include <boost/shared_ptr.hpp>
 #include <boost/ptr_container/ptr_set.hpp>
 
 namespace versos
@@ -37,6 +36,12 @@ namespace versos
     /**
      */
     const std::string& getHeadId() const;
+
+    /**
+     * retrieves the metadata of the given version id. Returns Version::ERROR If the version is not committed; 
+     * Version::NOT_FOUND if the version doesn't exist in the db.
+     */
+    const Version& checkout(const std::string& id);
 
     /**
      * inits a new db. Might fail if the db has been initialized previously
@@ -100,22 +105,27 @@ namespace versos
     virtual int remove(const Version& v, const VersionedObject& o) = 0;
 
     /**
-     * retrieves the metadata of the given version id. Returns Version::ERROR If the version is not committed; 
-     * Version::NOT_FOUND if the version doesn't exist in the db.
+     * for versions created with ::SHARED_LOCK, returns the number of locks placed on it.
      */
-    virtual const Version& checkout(const std::string& id) = 0;
+    virtual int getLockCount(const Version& v, const std::string& lockKey) = 0;
 
   protected:
     /**
+     * retrieves the metadata of the given version id. Returns ::Version::NOT_FOUND if the version doesn't 
+     * exist in the db.
+     */
+    virtual Version& get(const std::string& id) = 0;
+
+    /**
      * adds the given version to the database and acquires an EXCLUSIVE_LOCK over the version.
      */
-    int own(boost::shared_ptr<Version> v);
+    int insert(Version& v);
 
     /**
      * adds the given version to the database. When a SHARED_LOCK is given, a lockKey should be passed too. 
      * The implementation should take ownership of the passed pointer.
      */
-    virtual int own(boost::shared_ptr<Version> v, LockType lock, const std::string& lockKey) = 0;
+    virtual int insert(Version& v, LockType lock, const std::string& lockKey) = 0;
   };
 }
 #endif

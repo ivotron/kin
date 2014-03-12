@@ -56,6 +56,8 @@
 
 # refdb
 
+  - make use of the lockKey
+
 ## redisrefdb
 
   - the counter and the object lists are a potential bottleneck. How 
