@@ -1,3 +1,17 @@
+# immediate:
+
+  - finish backendcoordinator:
+      - every sync point has to synchronize the object list
+
+  - implement mpirefdb. This would dup the communicator used by the 
+    mpicoordinator and synchronize the memrefdb in the background
+
+  - measure backendcoordinator with vs. without mpirefdb to see if 
+    there's any interference between communicators in terms of 
+    performance:
+      - if there isn't, then we can use that to show results
+      - if it is, then we need to implement a redisrefdb
+
 # general
 
   - use exceptions instead of error codes
@@ -15,7 +29,6 @@
 # syncModes
 
   - remove "EACH" from names
-  - breake AT_ADD_OR_REMOVE into AT_ADD, AT_REMOVE, separately
 
 # coordinators
 
