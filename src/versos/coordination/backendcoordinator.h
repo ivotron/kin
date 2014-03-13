@@ -23,6 +23,7 @@ namespace versos
     // inherited
     Version& create(const Version& parent);
     int makeHEAD(const Version& v);
+    int commit(Version& v);
   };
 }
 #endif

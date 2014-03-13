@@ -17,9 +17,6 @@ namespace versos
 
   Version& BackendCoordinator::create(const Version& parent)
   {
-    if (syncMode == Options::ClientSync::NONE && parent.size() != 0)
-      return Version::ERROR;
-
     return SingleClientCoordinator::create(parent, RefDB::SHARED_LOCK, hashSeed);
   }
 
@@ -29,5 +26,34 @@ namespace versos
       return refdb.makeHEAD(v);
     else
       return 0;
+  }
+
+  int BackendCoordinator::commit(Version& v)
+  {
+    if (!v.isOK())
+      return -4;
+
+    boost::ptr_set<VersionedObject> objects = v.getObjects();
+    boost::ptr_set<VersionedObject>::iterator o;
+
+    for (o = objects.begin(); o != objects.end(); ++o)
+    {
+      int ret = o->commit(v);
+
+      if (ret)
+        return -22;
+    }
+
+    if (syncMode == Options::ClientSync::AT_EACH_COMMIT)
+    {
+      int ret = refdb.add(v, v.getObjects());
+
+      if (ret)
+        return ret;
+    }
+
+    v.setStatus(Version::COMMITTED);
+
+    return refdb.commit(v);
   }
 }

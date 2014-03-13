@@ -85,6 +85,7 @@ ENDIF()
 BUILD_AND_ADD_TEST (repository_test "repository_test.cpp")
 BUILD_AND_ADD_TEST (memrefdb_test "refdb/memrefdb_test.cpp")
 BUILD_AND_ADD_TEST (singleclientcoordinator_test "coordination/singleclientcoordinator_test.cpp")
+BUILD_AND_ADD_TEST (backendcoordinator_test "coordination/backendcoordinator_test.cpp")
 
 IF (ENABLE_MPI_COORDINATOR)
   BUILD_AND_ADD_MPI_TEST(mpicoordinator_test "coordination/mpicoordinator_test.cpp" 2 4 8 16)

@@ -97,9 +97,15 @@ namespace versos
         return -57;
     }
 
-    locks[v.getId()] = locks[v.getId()] + 1;
+    if (locks[v.getId()] > 1 && revisions.find(v.getId()) == revisions.end())
+      // look for it first, we should have it already
+      return -58;
 
-    revisions[v.getId()] = boost::shared_ptr<Version>(new Version(v));
+    if (locks[v.getId()] == 0)
+      // add it if it's the first time we see it
+      revisions[v.getId()] = boost::shared_ptr<Version>(new Version(v));
+
+    locks[v.getId()] = locks[v.getId()] + 1;
 
     return 0;
   }

@@ -33,9 +33,7 @@ TEST(backendcoordinator_test, NONE_object_containment)
 
   ASSERT_TRUE(head.isOK());
 
-  std::cout << "v1 " << std::endl << std::flush;
   versos::Version& v1 = repo.create(head);
-  std::cout << "v1 after " << std::endl << std::flush;
 
   ASSERT_TRUE(v1.isOK());
   ASSERT_FALSE(v1.isCommitted());
@@ -154,6 +152,49 @@ TEST(backendcoordinator_test, values_between_tests)
   // ASSERT_NE(0, repo.add(v1, o2));
   ASSERT_EQ(0, repo.add(v2, o2));
   ASSERT_EQ(0, repo.commit(v2));
+}
+
+TEST(backendcoordinator_test, multiple_clients_no_conflict)
+{
+  // simulate multiple clients from a single one
+  versos::Options o;
+
+  o.coordinator_type = versos::Options::Coordinator::BACKEND;
+  o.metadb_initialize_if_empty = true;
+
+  versos::Repository repo("mydataset", o);
+
+  const versos::Version& head = repo.checkoutHEAD();
+
+  versos::Version& v1c1 = repo.create(head);
+  versos::Version& v1c2 = repo.create(head);
+
+  ASSERT_TRUE(v1c1.isOK());
+  ASSERT_TRUE(v1c2.isOK());
+
+  ASSERT_EQ(v1c1, v1c2);
+
+  versos::MemVersionedObject o1c1(repo, "o1");
+  versos::MemVersionedObject o2c2(repo, "o2");
+
+  ASSERT_EQ(0, repo.add(v1c1, o1c1));
+  ASSERT_EQ(0, repo.add(v1c2, o2c2));
+
+  ASSERT_EQ(0, o1c1.write(v1c1, "c1first"));
+  ASSERT_EQ(0, o2c2.write(v1c2, "c2first"));
+
+  ASSERT_EQ(1, repo.commit(v1c1));
+
+  // TODO:
+  // versos::Version& v2 = repo.create(v1c1);
+  // ASSERT_FALSE(v2.isOK());
+
+  ASSERT_EQ(0, repo.commit(v1c2));
+
+  versos::Version& v2c1 = repo.create(v1c1);
+
+  ASSERT_TRUE(v2c1.isOK());
+  ASSERT_NE(v1c1, v2c1);
 }
 
 int main(int argc, char **argv)
