@@ -30,6 +30,8 @@ public:
   void connect(const std::string& host, int port) throw();
   void disconnect();
   void set(const std::string& key, const std::string& value) const throw();
+  void del(const std::string& key) const throw();
+  void flushall() const throw();
   long long incr(const std::string& key) const throw();
   long long decr(const std::string& key) const throw();
   long long sadd(const std::string& key, const std::string& value) const throw();

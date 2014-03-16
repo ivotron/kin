@@ -25,8 +25,14 @@ namespace versos
   {
     Version v(Version::PARENT_FOR_ROOT);
 
-    if (insert(v))
+    if (insert(v) < 0)
       return -80;
+
+    if (commit(v) < 0)
+      return -81;
+
+    if (makeHEAD(v) < 0)
+      return -82;
 
     headId = v.getId();
 
@@ -73,7 +79,7 @@ namespace versos
     // instantiate
     Version v(ss.str(), parent);
 
-    if (insert(v, lock, lockKey))
+    if (insert(v, lock, lockKey) < 0)
       return Version::ERROR;
 
     return get(v.getId());

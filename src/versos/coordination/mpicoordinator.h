@@ -1,3 +1,5 @@
+#ifdef ENABLE_MPI_COORDINATOR
+
 #ifndef MPI_COORDINATOR_H
 #define MPI_COORDINATOR_H
 
@@ -77,4 +79,5 @@ namespace versos
     void init();
   };
 }
+#endif
 #endif

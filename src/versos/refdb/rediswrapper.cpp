@@ -90,20 +90,22 @@ long long DB::sadd(const std::string& key, const std::list<std::string>& values)
   if (!isConnected())
     throw std::runtime_error("Not connected");
 
-  std::stringstream command;
+  std::string command;
+  long long result = 0;
 
-  command << "SADD " << key;
+  command = "SADD " + key + " ";
 
   for (std::list<std::string>::const_iterator it = values.begin(); it != values.end(); ++it)
-    command << *it;
+  {
+    // TODO: redis 2.4+ supports multiple values in a single call.
+    redisReply* reply = static_cast<redisReply*>(redisCommand(ctx, (command + *it).c_str()));
 
-  redisReply* reply = static_cast<redisReply*>(redisCommand(ctx, command.str().c_str()));
+    if(!reply)
+      throw std::runtime_error("SADD: No reply from Redis");
 
-  if(!reply)
-    throw std::runtime_error("SREM: No reply from Redis");
-
-  long long result = reply->integer;
-  freeReplyObject(reply);
+    result += reply->integer;
+    freeReplyObject(reply);
+  }
 
   return result;
 }
@@ -175,13 +177,11 @@ std::list<std::string> DB::lrange(const std::string& key) const throw()
   if(!reply)
     throw std::runtime_error("LRANGE: No reply from Redis");
 
-  if (reply->type != REDIS_REPLY_ARRAY)
-    throw std::runtime_error("LRANGE: No ARRAY reply from Redis");
-
   std::list<std::string> list;
 
-  for (unsigned int j = 0; j < reply->elements; j++)
-    list.push_back(reply->element[j]->str);
+  if (reply->type == REDIS_REPLY_ARRAY)
+    for (unsigned int j = 0; j < reply->elements; j++)
+      list.push_back(reply->element[j]->str);
 
   freeReplyObject(reply);
 
@@ -203,6 +203,38 @@ void DB::set(const std::string& key, const std::string& value) const throw()
   }
 
   throw std::runtime_error("SET: No reply from Redis");
+}
+
+void DB::flushall() const throw()
+{
+  if(!isConnected())
+    throw std::runtime_error("Not connected");
+
+  void* reply = redisCommand(ctx, "FLUSHALL");
+
+  if(reply)
+  {
+    freeReplyObject(reply);
+    return;
+  }
+
+  throw std::runtime_error("FLUSHALL: No reply from Redis");
+}
+
+void DB::del(const std::string& key) const throw()
+{
+  if(!isConnected())
+    throw std::runtime_error("Not connected");
+
+  void* reply = redisCommand(ctx, "DEL %b %b", key.c_str(), key.length());
+
+  if(reply)
+  {
+    freeReplyObject(reply);
+    return;
+  }
+
+  throw std::runtime_error("DEL: No reply from Redis");
 }
 
 std::string DB::get(const std::string& key) const throw()

@@ -69,7 +69,9 @@ namespace versos
     virtual int makeHEAD(const Version& v) = 0;
 
     /**
-     * changes the status of a version stored at the backed to Version::COMMITTED.
+     * changes the status of a version stored at the backed to Version::COMMITTED. If the version was created 
+     * with ::SHARED_LOCK, returns the number of locks remaining on it (i.e. decreases the lock count and 
+     * returns this number).
      */
     virtual int commit(const Version& v) = 0;
 

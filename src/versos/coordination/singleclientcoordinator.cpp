@@ -31,7 +31,7 @@ namespace versos
 
   Version& SingleClientCoordinator::create(const Version& parent)
   {
-    return create(parent, RefDB::EXCLUSIVE_LOCK, "singleClient");
+    return create(parent, RefDB::EXCLUSIVE_LOCK, hashSeed);
   }
 
   Version& SingleClientCoordinator::create(const Version& parent, RefDB::LockType lock, const std::string& key)
@@ -129,7 +129,7 @@ namespace versos
     {
       int ret = o->commit(v);
 
-      if (ret)
+      if (ret < 0)
         return -22;
     }
 

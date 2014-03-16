@@ -1,88 +1,5 @@
-# immediate:
 
-  - finish backendcoordinator:
-      - every sync point has to synchronize the object list
-
-  - implement mpirefdb. This would dup the communicator used by the 
-    mpicoordinator and synchronize the memrefdb in the background
-
-  - measure backendcoordinator with vs. without mpirefdb to see if 
-    there's any interference between communicators in terms of 
-    performance:
-      - if there isn't, then we can use that to show results
-      - if it is, then we need to implement a redisrefdb
-
-# general
-
-  - use exceptions instead of error codes
-
-# repository
-
-  - move refdb opening/initialization to the coordinator, since the 
-    coordinator is the one that owns the responsibility of // talking 
-    to the DB
-
-# version
-
-  - create unit test
-
-# syncModes
-
-  - remove "EACH" from names
-
-# coordinators
-
-## all
-
-  - coordinators aren't fault-tolerant (what if a client dies?)
-  - for AT_EACH_ADD_OR_REMOVE, instead of sending the whole list of 
-    objects that each client is working on, we can optimize this by 
-    "flattening" a version's internal state.
-  - add unit tests for conflicting scenarios (more than one client 
-    working on the same object)
-
-## singleclientcoordinator
-
-  - cover all syncModes in unit test
-
-## backendCoordinator
-
-  - cover all syncModes in unit test.
-  - when a version is committed and `sync_mode` is `AT_ADD_OR_REMOVE` 
-    or `AT_COMMIT`, only the last client that observes `lockCount == 
-    0` should call `o.commit()` for all the objects. Also, running in 
-    `AT_CREATE`, the client placing the first lock is in charge of 
-    calling `o.commit()`.
-  - when a checkout is done and the retrieved version is not 
-    committed, we HAVE to consult the RefDB, since the version might 
-    have been committed by other client
-  - when a create is done, we should return `Version::ERROR` if the 
-    lock count of the given parent version is not zero.
-
-## mpiCoordinator
-
-  - support commented-out tests in unit test
-  - throw an exception if two or more ranks added/removed the same 
-    object
-
-# refdb
-
-  - make use of the lockKey
-
-## memrefdb
-
-  - when inquiring about the status
-
-## redisrefdb
-
-  - the counter and the object lists are a potential bottleneck. How 
-    can we avoid this?
-
-## mpirefdb
-
-  - create an MPI-based backend
-
-----------------
+We first describe all the possible coordination scenarios
 
 # Options affecting overall behavior
 
@@ -131,3 +48,91 @@
   - when a client commits a version, no more locks can be placed on 
     the same version
   - the opposite
+
+----------
+
+**TO-DO**
+
+# immediate:
+
+  - add support for all the scenarios described above. We don't need 
+    to handle them, we might as well throw exceptions for most of 
+    them, but we need to add the structural paths that get to each of 
+    them for each coordinator
+
+
+
+# general
+
+  - use exceptions instead of error codes
+
+# repository
+
+  - move refdb opening/initialization to the coordinator, since the 
+    coordinator is the one that owns the responsibility of // talking 
+    to the DB
+
+# version
+
+  - create unit test
+
+# syncModes
+
+  - remove "EACH" from names
+
+# coordinators
+
+## all
+
+  - coordinators aren't fault-tolerant (what if a client dies?)
+  - for AT_EACH_ADD_OR_REMOVE, instead of sending the whole list of 
+    objects that each client is working on, we can optimize this by 
+    "flattening" a version's internal state.
+  - add unit tests for conflicting scenarios (more than one client 
+    working on the same object)
+
+## singleclientcoordinator
+
+  - cover all syncModes in unit test
+
+## backendCoordinator
+
+  - cover all syncModes in unit test.
+  - unit tests execute `FLUSHALL` which is overkill for a production 
+    environment
+  - when a version is committed and `sync_mode` is `AT_ADD_OR_REMOVE` 
+    or `AT_COMMIT`, only the last client that observes `lockCount == 
+    0` should call `o.commit()` for all the objects. Also, running in 
+    `AT_CREATE`, the client placing the first lock is in charge of 
+    calling `o.commit()`.
+  - when a checkout is done and the retrieved version is not 
+    committed, we HAVE to consult the RefDB, since the version might 
+    have been committed by other client
+  - when a create is done, we should return `Version::ERROR` if the 
+    lock count of the given parent version is not zero.
+
+## mpiCoordinator
+
+  - support commented-out tests in unit test
+  - throw an exception if two or more ranks added/removed the same 
+    object
+
+# refdb
+
+  - make use of the lockKey
+
+## memrefdb
+
+  - when inquiring about the status
+
+## redisrefdb
+
+  - the counter and the object lists are a potential bottleneck. How 
+    can we avoid this?
+
+## mpirefdb
+
+  - create an MPI-based backend
+
+----------------
+

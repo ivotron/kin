@@ -6,7 +6,6 @@
 
 #include "versos/objectversioning/versionedobject.h"
 
-#include <boost/serialization/shared_ptr.hpp>
 #include <boost/lexical_cast.hpp>
 
 namespace versos
@@ -15,32 +14,31 @@ namespace versos
  * high-level description of implementation:
  *
  * redis keys/datatypes used:
- *   - @c <repoName>_metadb = string
  *   - @c <repoName>_head = string
  *   - @c <repoName>_<version_id>_parent = string
- *   - @c <repoName>_<version_id>_counter = string as int (a.k.a. counter)
+ *   - @c <repoName>_<version_id>_locks = string as int (a.k.a. counter)
  *   - @c <repoName>_<version_id>_objects = set
  *
- * @c <repoName>_metadb determines whether metadata for a repo exists (i.e. whether is empty), if the 
- * associated string is empty the repo is empty then the repo is too. The @c <repoName>_head contains the id 
- * of the HEAD. @c <repoName>_<version_id>_counter is used to handle the shared locks and implicitly the 
- * transaction status (0 means the version is committed). @c <repoName>_<version_id>_objects is a set that 
- * contains object ids (generated through Version::getId).
+ * @c <repoName>_head determines whether metadata for a repo exists (i.e. whether is empty), if the associated 
+ * string is empty then the repo is too. At the same time, the @c <repoName>_head contains the id of the HEAD. 
+ * @c <repoName>_<version_id>_locks is used to handle the shared locks and implicitly the transaction status 
+ * (0 means the version is committed). @c <repoName>_<version_id>_objects is a set that contains object ids 
+ * (generated through Version::getId).
  *
  * Operations are almost 1-to-1 with redis::DB. When a version is created (via RefDB::create which in turn 
  * invokes RedisRefDB::own), the counter is increased by one. If a version is committed, the counter is 
  * decreased. This operations are atomic so we don't need to worry about race conditions among participants. 
- * The only thing to note is that the ::makeHead() isn't currently atomic (eg. should use Redis' MULTI or Lua 
- * scripts). When an object is added to a version, the object is added to the @c repoName_versionId_objects 
- * set; similarly for removals.
+ * The only thing to note is that the ::makeHead() method isn't currently atomic (eg. should use Redis' MULTI 
+ * or Lua scripts). When an object is added to a version, the object is added to the @c 
+ * repoName_versionId_objects set; similarly for removals.
  *
- * TODO: RefDB::EXCLUSIVE_LOCK is not supported (might be trivial to implement but we haven't gone through how 
- * it would get done)
  * TODO: @c lockKeys are currently ignored
  */
 RedisRefDB::RedisRefDB(const std::string& repoName, const Options& o) :
   MemRefDB(repoName), host(o.metadb_server_address)
 {
+  if (host.empty() || host == "")
+    host = "127.0.0.1";
 }
 
 RedisRefDB::~RedisRefDB()
@@ -58,6 +56,8 @@ int RedisRefDB::open()
     return -100;
   }
 
+  headId = redisdb.get(repoName + "_head");
+
   return 0;
 }
 
@@ -70,7 +70,7 @@ int RedisRefDB::close()
 
 bool RedisRefDB::isEmpty() const
 {
-  std::string value = redisdb.get(MemRefDB::repoName + "_metadb");
+  std::string value = redisdb.get(repoName + "_head");
 
   return value.empty();
 }
@@ -91,7 +91,9 @@ int RedisRefDB::makeHEAD(const Version& v)
 
 int RedisRefDB::commit(const Version& v)
 {
-  return redisdb.decr(repoName + "_" + v.getId() + "_counter");
+  MemRefDB::commit(v);
+
+  return redisdb.decr(repoName + "_" + v.getId() + "_locks");
 }
 
 int RedisRefDB::getLockCount(const Version& v, const std::string&)
@@ -102,14 +104,17 @@ int RedisRefDB::getLockCount(const Version& v, const std::string&)
 
 int RedisRefDB::getLockCount(const std::string& id)
 {
-  std::string getted = redisdb.get(repoName + "_" + id + "_counter");
-  std::cout << "getted: " << getted << std::endl << std::flush;
-  return boost::lexical_cast<int>(getted);
+  std::string cnt = redisdb.get(repoName + "_" + id + "_locks");
+
+  if (cnt.empty())
+    return -85;
+
+  return boost::lexical_cast<int>(cnt);
 }
 
-const Version& RedisRefDB::checkout(const std::string& id)
+Version& RedisRefDB::get(const std::string& id)
 {
-  const Version& v = MemRefDB::checkout(id);
+  Version& v = MemRefDB::get(id);
 
   if (v.isOK())
     return v;
@@ -132,11 +137,11 @@ const Version& RedisRefDB::checkout(const std::string& id)
     objects.insert(new VersionedObject(objectMeta[0], objectMeta[1], objectMeta[2]));
   }
 
-  Version* checkedOutVersion = new Version(id, parentId, objects);
+  Version checkedOutVersion(id, parentId, objects);
 
-  MemRefDB::add(boost::shared_ptr<Version>(checkedOutVersion));
+  MemRefDB::add(checkedOutVersion);
 
-  return *checkedOutVersion;
+  return MemRefDB::get(id);
 }
 
 int RedisRefDB::add(const Version& v, const VersionedObject& o)
@@ -209,21 +214,22 @@ int RedisRefDB::remove(const Version& v, const boost::ptr_set<VersionedObject>& 
   return 0;
 }
 
-int RedisRefDB::remove(const Version& )
+int RedisRefDB::insert(Version& v, LockType lock, const std::string& lockKey)
 {
-  return -108;
-}
+  int ret = MemRefDB::insert(v, lock, lockKey);
 
-int RedisRefDB::own(boost::shared_ptr<Version> v, LockType lock, const std::string&)
-{
-  if (lock == RefDB::EXCLUSIVE_LOCK)
+  if (ret < 0)
+    return ret;
+
+  int cnt = redisdb.incr(repoName + "_" + v.getId() + "_locks");
+
+  if (cnt == 2 && lock == RefDB::EXCLUSIVE_LOCK)
+  {
+    redisdb.decr(repoName + "_" + v.getId() + "_locks");
     return -109;
+  }
 
-  redisdb.incr(repoName + "_" + v->getId() + "_counter");
-
-  MemRefDB::add(v);
-
-  return 0;
+  return cnt;
 }
 
 } // namespace

@@ -57,10 +57,14 @@ namespace versos
 
   Version& MemRefDB::get(const std::string& id)
   {
-    if (revisions.find(id) == revisions.end())
+    std::map<std::string, boost::shared_ptr<Version> >::iterator found;
+
+    found = revisions.find(id);
+
+    if (found == revisions.end())
       return Version::NOT_FOUND;
 
-    return *(revisions.find(id)->second);
+    return *(found->second);
   }
 
   int MemRefDB::add(const Version&, const boost::ptr_set<VersionedObject>&)
@@ -97,8 +101,8 @@ namespace versos
         return -57;
     }
 
-    if (locks[v.getId()] > 1 && revisions.find(v.getId()) == revisions.end())
-      // look for it first, we should have it already
+    if (locks[v.getId()] > 0 && revisions.find(v.getId()) == revisions.end())
+      // we should have it already
       return -58;
 
     if (locks[v.getId()] == 0)

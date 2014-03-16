@@ -27,21 +27,15 @@ namespace versos
     int close();
     bool isEmpty() const;
     int makeHEAD(const Version& v);
-
-    /**
-     * decreases the shared lock count and returns the new value.
-     */
     int commit(const Version& v);
-    int getLockCount(const Version& v, const std::string& id);
-    int release(const Version& v, const std::string& id);
-    const Version& checkout(const std::string& id);
-    int remove(const Version& v);
+    int getLockCount(const Version& v, const std::string& lockKey);
     int add(const Version& v, const boost::ptr_set<VersionedObject>& o);
     int add(const Version& v, const VersionedObject& o);
     int remove(const Version& v, const VersionedObject& o);
     int remove(const Version& v, const boost::ptr_set<VersionedObject>& o);
   protected:
-    int own(boost::shared_ptr<Version> v, LockType lock, const std::string& lockKey);
+    int insert(Version& v, LockType lock, const std::string& lockKey);
+    Version& get(const std::string& id);
   private:
     int getLockCount(const std::string& id);
   };

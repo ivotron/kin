@@ -24,10 +24,10 @@ namespace versos
   Repository::Repository(const std::string& name, const Options& o) : name(name)
   {
     if (o.metadb_type == Options::MetaDB::MEM)
-      refdb = new MemRefDB(name + "_metadb");
+      refdb = new MemRefDB(name);
 #ifdef ENABLE_REDIS_METADB
     else if (o.metadb_type == Options::MetaDB::REDIS)
-      refdb = new RedisRefDB(name + "_metadb", o);
+      refdb = new RedisRefDB(name, o);
 #endif
     else
       throw std::runtime_error("unknown metadb class");
@@ -100,17 +100,17 @@ namespace versos
 
   int Repository::commit(Version& v)
   {
-    int ret = coordinator->commit(v);
+    int cnt = coordinator->commit(v);
+
+    if (cnt < 0)
+      return cnt;
+
+    int ret = coordinator->makeHEAD(v);
 
     if (ret)
       return ret;
 
-    ret = coordinator->makeHEAD(v);
-
-    if (ret)
-      return ret;
-
-    return 0;
+    return cnt;
   }
 
   bool Repository::isEmpty() const
