@@ -29,15 +29,15 @@ namespace versos
     ~MpiCoordinator();
 
     // inherited
-    int getHeadId(std::string& id);
-    const Version& checkout(const std::string& id);
-    Version& create(const Version& parent);
-    int add(Version& v, VersionedObject& o);
-    int remove(Version& v, VersionedObject& o);
-    int commit(Version& v);
-    int makeHEAD(const Version& v);
-    bool isRepositoryEmpty();
-    int shutdown();
+    std::string getHeadId() throw (VersosException);
+    const Version& checkout(const std::string& id) throw (VersosException);
+    Version& create(const Version& parent) throw (VersosException);
+    void add(Version& v, VersionedObject& o) throw (VersosException);
+    void remove(Version& v, VersionedObject& o) throw (VersosException);
+    int commit(Version& v) throw (VersosException);
+    void makeHEAD(const Version& v) throw (VersosException);
+    bool isRepositoryEmpty() throw (VersosException);
+    void shutdown() throw (VersosException);
 
   protected:
     // TODO: create a @c MultiClientCoordinator class with the following methods declared as abstract

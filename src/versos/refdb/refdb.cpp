@@ -14,29 +14,22 @@ namespace versos
   RefDB::RefDB(const std::string& repoName) : repoName(repoName)
   {
     if (repoName.empty())
-      throw std::runtime_error("RefDB: empty repo name");
+      throw VersosException("RefDB: empty repo name");
   }
 
   RefDB::~RefDB()
   {
   }
 
-  int RefDB::init()
+  void RefDB::init() throw (VersosException)
   {
     Version v(Version::PARENT_FOR_ROOT);
 
-    if (insert(v) < 0)
-      return -80;
-
-    if (commit(v) < 0)
-      return -81;
-
-    if (makeHEAD(v) < 0)
-      return -82;
+    insert(v);
+    commit(v);
+    makeHEAD(v);
 
     headId = v.getId();
-
-    return 0;
   }
 
   const std::string& RefDB::getHeadId() const
@@ -44,12 +37,15 @@ namespace versos
     return headId;
   };
 
-  const Version& RefDB::checkout(const std::string& id)
+  const Version& RefDB::checkout(const std::string& id) throw (VersosException)
   {
     Version& v = get(id);
 
+    if (!v.isOK())
+      return v;
+
     if (!v.isCommitted())
-      return Version::ERROR;
+      throw VersosException("Version " + id + " not committed");
 
     return v;
   }
@@ -79,14 +75,13 @@ namespace versos
     // instantiate
     Version v(ss.str(), parent);
 
-    if (insert(v, lock, lockKey) < 0)
-      return Version::ERROR;
+    insert(v, lock, lockKey);
 
     return get(v.getId());
   }
 
-  int RefDB::insert(Version& v)
+  void RefDB::insert(Version& v) throw (VersosException)
   {
-    return insert(v, EXCLUSIVE_LOCK, "");
+    insert(v, EXCLUSIVE_LOCK, "");
   }
 }

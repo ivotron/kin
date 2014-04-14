@@ -5,6 +5,8 @@
 #ifndef VERSION_H
 #define VERSION_H
 
+#include "versos/versosexception.h"
+
 #include <string>
 #include <stdint.h>
 #include <set>
@@ -28,12 +30,10 @@ namespace versos
     friend class BackendCoordinator;
   public:
     /**
-     * ONLY_ONE is used only by the singleton NOT_FOUND and is used to 
-     * communicate when a version hasn't been found.
+     * NONE is used by the singleton NOT_FOUND; to communicate when a version hasn't been found.
      */
     enum Status { COMMITTED, STAGED, NONE };
     static Version NOT_FOUND;
-    static Version ERROR;
     static Version PARENT_FOR_ROOT;
   protected:
 
@@ -62,12 +62,12 @@ namespace versos
     unsigned int size() const;
 
     /**
-     * can I add/remove to this version?
+     * who's my parent?
      */
     const std::string& getParentId() const;
 
     /**
-     * can I add/remove to this version?
+     * can I modify to this version?
      */
     bool isCommitted() const;
 
@@ -97,13 +97,13 @@ namespace versos
      */
     bool contains(const VersionedObject& o) const;
 
-    bool operator== (const Version& other) const;
-    bool operator!= (const Version& other) const;
-
     /**
-     * returns @c true if the version is not an instance of @c Version::NOT_FOUND or @c Version::ERROR
+     * returns @c true if the version is not an instance of @c Version::NOT_FOUND
      */
     bool isOK() const;
+
+    bool operator== (const Version& other) const;
+    bool operator!= (const Version& other) const;
 
     std::ostream& dump(std::ostream& o) const;
 
@@ -111,25 +111,25 @@ namespace versos
     /**
      * Adds an object to this version.
      */
-    int add(const VersionedObject& o);
+    void add(const VersionedObject& o) throw (VersosException);
 
     /**
      * Adds a set of objects to this version.
      */
-    int add(const boost::ptr_set<VersionedObject>& o);
+    void add(const boost::ptr_set<VersionedObject>& o) throw (VersosException);
 
     /**
      * removes an object.
      */
-    int remove(const VersionedObject& o);
+    void remove(const VersionedObject& o) throw (VersosException);
 
     /**
      * Removes a set of objects to this version.
      */
-    int remove(const boost::ptr_set<VersionedObject>& o);
+    void remove(const boost::ptr_set<VersionedObject>& o) throw (VersosException);
 
     /**
-     * commits the staged objects.
+     * modifies the status of the version.
      */
     void setStatus(Status status);
 

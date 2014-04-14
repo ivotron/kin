@@ -26,13 +26,13 @@ namespace versos
     virtual ~MemVersionedObject();
 
     // inherited
-    int create(const Version& parent, const Version& child);
-    int commit(const Version& v);
-    int remove(const Version& v);
+    void create(const Version& parent, const Version& child) throw (VersosException);
+    void commit(const Version& v) throw (VersosException);
+    void remove(const Version& v) throw (VersosException);
 
     // mem-specific
-    int write(const Version& v, const std::string& value);
-    int read(const Version& v, std::string& value);
+    void put(const Version& v, const std::string& value) throw (VersosException);
+    std::string get(const Version& v) throw (VersosException);
 
   private:
     virtual VersionedObject* do_clone() const;

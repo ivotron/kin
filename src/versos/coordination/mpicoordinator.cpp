@@ -73,18 +73,19 @@ namespace versos
   {
   }
 
-  int MpiCoordinator::getHeadId(std::string& id)
+  std::string MpiCoordinator::getHeadId() throw (VersosException)
   {
+    std::string id;
+
     if (imLeader())
-      if (SingleClientCoordinator::getHeadId(id))
-        handleError(-64);
+      id = SingleClientCoordinator::getHeadId();
 
     broadcast(id);
 
-    return 0;
+    return id;
   }
 
-  const Version& MpiCoordinator::checkout(const std::string& id)
+  const Version& MpiCoordinator::checkout(const std::string& id) throw (VersosException)
   {
     // check if locally available
     {
@@ -103,9 +104,6 @@ namespace versos
       {
         const Version& leaderV = SingleClientCoordinator::checkout(id);
 
-        if (!leaderV.isOK())
-          handleError(-61);
-
         parentId = leaderV.getParentId();
         objects = leaderV.getObjects();
       }
@@ -119,111 +117,84 @@ namespace versos
       Version v(id, parentId, objects);
 
       // add to local db
-      int ret = localRefDB.add(v);
-
-      if (ret)
-        handleError(ret);
+      localRefDB.add(v);
 
       return localRefDB.checkout(id);
     }
   }
 
-  Version& MpiCoordinator::create(const Version& parent)
+  Version& MpiCoordinator::create(const Version& parent) throw (VersosException)
   {
     if (syncMode == Options::ClientSync::NONE && parent.size() != 0)
-      handleError(-62);
+      throw VersosException("parent should be empty for ClientSync::Mode == NONE");
 
     if (!localRefDB.checkout(parent.getId()).isOK())
-      handleError(-63);
+      throw VersosException("Error checking out version from local MetaDB");
 
-    if (imLeader() && SingleClientCoordinator::create(parent) == Version::ERROR)
-      handleError(-64);
+    if (imLeader())
+      SingleClientCoordinator::create(parent);
 
-    // since parent is here, we don't need to synchronize with the leader (in other words, singlecoordinator 
-    // should create the same version id and since it has all the object metadata needed, the leader can work 
-    // on its own)
+    // since parent is "here" (i.e. inside the local metadb), we don't need to synchronize with the leader. 
+    // When the local metadb creates the new version, since creation is deterministic, localRefDB should 
+    // create the same version regardless of which rank we're at.
     Version& newVersion = localRefDB.create(parent, hashSeed);
 
     return newVersion;
   }
 
-  int MpiCoordinator::add(Version& v, VersionedObject& o)
+  void MpiCoordinator::add(Version& v, VersionedObject& o) throw (VersosException)
   {
     if (syncMode == Options::ClientSync::NONE)
-      return -1;
+      throw VersosException("can't add objects to a version in NONE sync_mode");
 
-    int ret = v.add(o);
-    if (ret)
-      handleError(ret);
+    v.add(o);
 
     if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
       allGather(v);
 
-    ret = o.create(checkout(v.getParentId()), v);
-    if (ret)
-      handleError(ret);
-
-    return 0;
+    o.create(checkout(v.getParentId()), v);
   }
 
-  int MpiCoordinator::remove(Version& v, VersionedObject& o)
+  void MpiCoordinator::remove(Version& v, VersionedObject& o) throw (VersosException)
   {
     if (syncMode == Options::ClientSync::NONE)
-      return -1;
+      throw VersosException("can't remove objects from a version in NONE sync_mode");
 
-    int ret = v.remove(o);
-    if (ret)
-      handleError(ret);
+    v.remove(o);
 
     if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
       allGather(v);
 
-    ret = o.remove(v);
-    if (ret)
-      handleError(ret);
-
-    return 0;
+    o.remove(v);
   }
 
-  int MpiCoordinator::commit(Version& v)
+  int MpiCoordinator::commit(Version& v) throw (VersosException)
   {
     if (syncMode == Options::ClientSync::AT_EACH_COMMIT)
       allGather(v);
 
     if (imLeader())
-    {
       // if (syncMode == Options::ClientSync::NONE)
       // TODO: leader doesn't know about objects in each rank, so each rank has to call o.commit(v)
       //       the problem is that we don't have the references to those objects, so the user has to do that 
       //       on his/her own. We can enforce this by checking if the object being committed (locally) has 
       //       been committed in the objectstore (by adding some sort of ::VersionedObject::isCommited() 
       //       method
-
-      int ret = SingleClientCoordinator::commit(v);
-
-      if (ret)
-        handleError(ret);
-    }
+      SingleClientCoordinator::commit(v);
 
     v.setStatus(Version::COMMITTED);
 
+    // we don't use shared locks, so we're certain that cnt is zero
     return 0;
   }
 
-  int MpiCoordinator::makeHEAD(const Version& v)
+  void MpiCoordinator::makeHEAD(const Version& v) throw (VersosException)
   {
     if (imLeader())
-    {
-      int ret = SingleClientCoordinator::makeHEAD(v);
-
-      if (ret)
-        handleError(ret);
-    }
-
-    return 0;
+      SingleClientCoordinator::makeHEAD(v);
   }
 
-  bool MpiCoordinator::isRepositoryEmpty()
+  bool MpiCoordinator::isRepositoryEmpty() throw (VersosException)
   {
     int isEmpty;
 
@@ -240,12 +211,10 @@ namespace versos
     return isEmpty == 0;
   }
 
-  int MpiCoordinator::shutdown()
+  void MpiCoordinator::shutdown() throw (VersosException)
   {
     if (imLeader())
       return SingleClientCoordinator::shutdown();
-
-    return 0;
   }
 
   //////

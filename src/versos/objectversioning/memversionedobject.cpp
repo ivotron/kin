@@ -28,66 +28,41 @@ namespace versos
   {
   }
 
-  int MemVersionedObject::create(const Version&, const Version&)
+  void MemVersionedObject::create(const Version&, const Version&) throw (VersosException)
   {
-    return 0;
   }
 
-  int MemVersionedObject::commit(const Version&)
+  void MemVersionedObject::commit(const Version&) throw (VersosException)
   {
-    return 0;
   }
 
-  int MemVersionedObject::remove(const Version& v)
+  void MemVersionedObject::remove(const Version& v) throw (VersosException)
   {
-    std::string id;
-
-    int ret = getId(v, id);
-
-    if (ret)
-      return ret;
+    std::string id = getId(v);
 
     if (values.find(id) == values.end())
       ; // OK, maybe user didn't write to this object in this version,
         // but this is not our business though, layers above should handle this
     else if (values.erase(id) != 1)
-      return -41;
-
-    return 0;
+      throw VersosException("Object not removed");
   }
 
-  int MemVersionedObject::write(const Version& v, const std::string& value)
+  void MemVersionedObject::put(const Version& v, const std::string& value) throw (VersosException)
   {
     if (v.isCommitted())
-      return -42;
+      throw VersosException("Version already committed");
 
-    std::string id;
-
-    int ret = getId(v, id);
-
-    if (ret)
-      return ret;
-
-    values[id] = value;
-
-    return 0;
+    values[getId(v)] = value;
   }
 
-  int MemVersionedObject::read(const Version& v, std::string& value)
+  std::string MemVersionedObject::get(const Version& v) throw (VersosException)
   {
-    std::string id;
-
-    int ret = getId(v, id);
-
-    if (ret)
-      return ret;
+    std::string id = getId(v);
 
     if (values.find(id) == values.end())
-      return -43;
+      throw VersosException("object not found");
 
-    value = values[id];
-
-    return 0;
+    return values[id];
   }
 
   VersionedObject* MemVersionedObject::do_clone() const

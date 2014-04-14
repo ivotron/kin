@@ -15,14 +15,12 @@ namespace versos
   {
   }
 
-  int MemRefDB::open()
+  void MemRefDB::open() throw (VersosException)
   {
-    return 0;
   }
 
-  int MemRefDB::close()
+  void MemRefDB::close() throw (VersosException)
   {
-    return 0;
   }
 
   bool MemRefDB::isEmpty() const
@@ -30,32 +28,30 @@ namespace versos
     return revisions.empty();
   }
 
-  int MemRefDB::makeHEAD(const Version& v)
+  void MemRefDB::makeHEAD(const Version& v) throw (VersosException)
   {
     if (v.getParentId() != headId)
-      return -54;
+      throw VersosException("current HEAD is not same as version's parent");
 
     headId = v.getId();
-
-    return 0;
   }
 
-  int MemRefDB::commit(const Version& v)
+  int MemRefDB::commit(const Version& v) throw (VersosException)
   {
     if (locks.find(v.getId()) == locks.end())
-      return -55;
+      throw VersosException("Version not found");
 
     locks[v.getId()] = locks[v.getId()] - 1;
 
     return locks[v.getId()];
   }
 
-  int MemRefDB::getLockCount(const Version& v, const std::string&)
+  int MemRefDB::getLockCount(const Version& v, const std::string&) throw (VersosException)
   {
     return locks[v.getId()];
   }
 
-  Version& MemRefDB::get(const std::string& id)
+  Version& MemRefDB::get(const std::string& id) throw (VersosException)
   {
     std::map<std::string, boost::shared_ptr<Version> >::iterator found;
 
@@ -67,50 +63,43 @@ namespace versos
     return *(found->second);
   }
 
-  int MemRefDB::add(const Version&, const boost::ptr_set<VersionedObject>&)
+  void MemRefDB::add(const Version&, const boost::ptr_set<VersionedObject>&) throw (VersosException)
   {
-    return 0;
   }
-  int MemRefDB::remove(const Version&, const boost::ptr_set<VersionedObject>&)
+  void MemRefDB::remove(const Version&, const boost::ptr_set<VersionedObject>&) throw (VersosException)
   {
-    return 0;
   }
-  int MemRefDB::add(const Version&, const VersionedObject&)
+  void MemRefDB::add(const Version&, const VersionedObject&) throw (VersosException)
   {
-    return 0;
   }
 
-  int MemRefDB::remove(const Version&, const VersionedObject&)
+  void MemRefDB::remove(const Version&, const VersionedObject&) throw (VersosException)
   {
-    return 0;
   }
 
-  int MemRefDB::add(Version& v)
+  void MemRefDB::add(Version& v) throw (VersosException)
   {
-    return RefDB::insert(v);
+    RefDB::insert(v);
   }
 
-  int MemRefDB::insert(Version& v, LockType lock, const std::string&)
+  void MemRefDB::insert(Version& v, LockType lock, const std::string&) throw (VersosException)
   {
     if (lock == EXCLUSIVE_LOCK)
     {
-      if (locks[v.getId()] != 0)
-        return -56;
-
       if (revisions.find(v.getId()) != revisions.end())
-        return -57;
+        throw VersosException("version " + v.getId() + " already in metadb");
+
+      if (locks[v.getId()] != 0)
+        throw VersosException("version already locked");
     }
 
     if (locks[v.getId()] > 0 && revisions.find(v.getId()) == revisions.end())
-      // we should have it already
-      return -58;
+      throw VersosException("version not found");
 
     if (locks[v.getId()] == 0)
       // add it if it's the first time we see it
       revisions[v.getId()] = boost::shared_ptr<Version>(new Version(v));
 
     locks[v.getId()] = locks[v.getId()] + 1;
-
-    return 0;
   }
 }

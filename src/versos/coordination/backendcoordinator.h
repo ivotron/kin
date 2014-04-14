@@ -21,9 +21,9 @@ namespace versos
     ~BackendCoordinator();
 
     // inherited
-    Version& create(const Version& parent);
-    int makeHEAD(const Version& v);
-    int commit(Version& v);
+    Version& create(const Version& parent) throw (VersosException);
+    void makeHEAD(const Version& v) throw (VersosException);
+    int commit(Version& v) throw (VersosException);
   };
 }
 #endif

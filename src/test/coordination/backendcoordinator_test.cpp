@@ -43,7 +43,7 @@ TEST(backendcoordinator_test, NONE_object_containment)
 
   versos::MemVersionedObject o1(repo, "o1");
 
-  ASSERT_NE(0, repo.add(v1, o1));
+  ASSERT_ANY_THROW(repo.add(v1, o1));
 
   ASSERT_FALSE(v1.isCommitted());
   ASSERT_EQ(versos::Version::STAGED, v1.getStatus());
@@ -65,7 +65,7 @@ TEST(backendcoordinator_test, NONE_object_containment)
   ASSERT_EQ(0u, v2.size());
   ASSERT_FALSE(v2.contains(o1));
 
-  ASSERT_NE(0, repo.remove(v2, o1));
+  ASSERT_ANY_THROW(repo.remove(v2, o1));
 
   ASSERT_FALSE(v2.isCommitted());
   ASSERT_EQ(0u, v2.size());
@@ -102,7 +102,7 @@ TEST(backendcoordinator_test, wrong_mode_for_object_containment_operations)
   versos::MemVersionedObject ob(repo, "o1");
 
   // since we're in NONE mode, we get errors
-  ASSERT_NE(0, repo.add(v1, ob));
+  ASSERT_ANY_THROW(repo.add(v1, ob));
 
   // we have to create repo with default AT_EACH_COMMIT (default) or AT_EACH_ADD_OR_REMOVE in order to be able 
   // to add to it, see next test:
@@ -124,33 +124,26 @@ TEST(backendcoordinator_test, values_between_tests)
 
   versos::MemVersionedObject o1(repo, "o1");
 
-  ASSERT_EQ(0, repo.add(v1, o1));
+  ASSERT_NO_THROW(repo.add(v1, o1));
 
-  ASSERT_EQ(0, o1.write(v1, "first"));
+  ASSERT_NO_THROW(o1.put(v1, "first"));
 
-  ASSERT_EQ(0, repo.commit(v1));
+  ASSERT_NO_THROW(repo.commit(v1));
 
   versos::Version& v2 = repo.create(v1);
 
   ASSERT_TRUE(v2.isOK());
   ASSERT_NE(v1, v2);
 
-  ASSERT_EQ(0, o1.write(v2, "second"));
+  ASSERT_NO_THROW(o1.put(v2, "second"));
 
-  std::string o1v1;
-  std::string o1v2;
-
-  ASSERT_EQ(0, o1.read(v1, o1v1));
-  ASSERT_EQ(0, o1.read(v2, o1v2));
-
-  ASSERT_EQ("first", o1v1);
-  ASSERT_EQ("second", o1v2);
+  ASSERT_EQ("first", o1.get(v1));
+  ASSERT_EQ("second", o1.get(v2));
 
   versos::MemVersionedObject o2(repo, "o2");
-  // TODO: the following aborts:
-  //
-  // ASSERT_NE(0, repo.add(v1, o2));
-  ASSERT_EQ(0, repo.add(v2, o2));
+
+  ASSERT_ANY_THROW(repo.add(v1, o2));
+  ASSERT_NO_THROW(repo.add(v2, o2));
   ASSERT_EQ(0, repo.commit(v2));
 }
 
@@ -177,17 +170,15 @@ TEST(backendcoordinator_test, multiple_clients_no_conflict)
   versos::MemVersionedObject o1c1(repo, "o1");
   versos::MemVersionedObject o2c2(repo, "o2");
 
-  ASSERT_EQ(0, repo.add(v1c1, o1c1));
-  ASSERT_EQ(0, repo.add(v1c2, o2c2));
+  ASSERT_NO_THROW(repo.add(v1c1, o1c1));
+  ASSERT_NO_THROW(repo.add(v1c2, o2c2));
 
-  ASSERT_EQ(0, o1c1.write(v1c1, "c1first"));
-  ASSERT_EQ(0, o2c2.write(v1c2, "c2first"));
+  ASSERT_NO_THROW(o1c1.put(v1c1, "c1first"));
+  ASSERT_NO_THROW(o2c2.put(v1c2, "c2first"));
 
   ASSERT_EQ(1, repo.commit(v1c1));
 
-  // TODO:
-  // versos::Version& v2 = repo.create(v1c1);
-  // ASSERT_FALSE(v2.isOK());
+  // TODO: ASSERT_ANY_THROW(repo.create(v1c1));
 
   ASSERT_EQ(0, repo.commit(v1c2));
 

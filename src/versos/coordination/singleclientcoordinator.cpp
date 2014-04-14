@@ -17,138 +17,99 @@ namespace versos
   {
   }
 
-  int SingleClientCoordinator::getHeadId(std::string& id)
+  std::string SingleClientCoordinator::getHeadId() throw (VersosException)
   {
-    id = refdb.getHeadId();
-
-    return 0;
+    return refdb.getHeadId();
   }
 
-  const Version& SingleClientCoordinator::checkout(const std::string& id)
+  const Version& SingleClientCoordinator::checkout(const std::string& id) throw (VersosException)
   {
     return refdb.checkout(id);
   }
 
-  Version& SingleClientCoordinator::create(const Version& parent)
+  Version& SingleClientCoordinator::create(const Version& parent) throw (VersosException)
   {
     return create(parent, RefDB::EXCLUSIVE_LOCK, hashSeed);
   }
 
-  Version& SingleClientCoordinator::create(const Version& parent, RefDB::LockType lock, const std::string& key)
+  Version& SingleClientCoordinator::create(
+      const Version& parent, RefDB::LockType lock, const std::string& key) throw (VersosException)
   {
     if (syncMode == Options::ClientSync::NONE && parent.size() != 0)
-      return Version::ERROR;
+      throw VersosException("parent should be empty for ClientSync::Mode == NONE");
 
     Version& v = refdb.create(parent, hashSeed, lock, key);
-
-    if (v == Version::ERROR)
-      return v;
 
     boost::ptr_set<VersionedObject>::iterator o;
 
     for (o = v.getParents().begin(); o != v.getParents().end(); ++o)
-    {
-      if (o->create(parent, v))
-        return Version::ERROR;
-    }
+      o->create(parent, v);
 
     if (syncMode == Options::ClientSync::AT_CREATE)
-      if (refdb.add(v, v.getParents()))
-        return Version::ERROR;
+      refdb.add(v, v.getParents());
 
     return v;
   }
 
-  int SingleClientCoordinator::add(Version& v, VersionedObject& o)
+  void SingleClientCoordinator::add(Version& v, VersionedObject& o) throw (VersosException)
   {
     if (syncMode == Options::ClientSync::NONE)
-      return -1;
-
-    if (!v.isOK())
-      return -1;
+      throw VersosException("can't add objects to a version in NONE sync_mode");
 
     if (v.isCommitted())
-      return -2;
+      throw VersosException("Can't add objects to version; already committed");
 
-    int ret = v.add(o);
-
-    if (ret)
-      return ret;
+    v.add(o);
 
     if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
-      ret = refdb.add(v, o);
+      refdb.add(v, o);
 
-    if (ret)
-      return ret;
-
-    return o.create(checkout(v.getParentId()), v);
+    o.create(checkout(v.getParentId()), v);
   }
 
-  int SingleClientCoordinator::remove(Version& v, VersionedObject& o)
+  void SingleClientCoordinator::remove(Version& v, VersionedObject& o) throw (VersosException)
   {
     if (syncMode == Options::ClientSync::NONE)
-      return -1;
-
-    if (!v.isOK())
-      return -1;
+      throw VersosException("can't remove objects from a version in NONE sync_mode");
 
     if (v.isCommitted())
-      return -2;
+      throw VersosException("Can't remove objects from version; already committed");
 
-    int ret = o.remove(v);
-
-    if (ret)
-      return ret;
+    o.remove(v);
 
     if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
-      ret = refdb.remove(v, o);
+      refdb.remove(v, o);
 
-    if (ret)
-      return ret;
-
-    return v.remove(o);
+    v.remove(o);
   }
 
-  int SingleClientCoordinator::makeHEAD(const Version& v)
+  void SingleClientCoordinator::makeHEAD(const Version& v) throw (VersosException)
   {
-    return refdb.makeHEAD(v);
+    refdb.makeHEAD(v);
   }
 
-  int SingleClientCoordinator::commit(Version& v)
+  int SingleClientCoordinator::commit(Version& v) throw (VersosException)
   {
-    if (!v.isOK())
-      return -4;
-
     if (v.isCommitted())
-      return -5;
+      throw VersosException("Already committed version");
 
     boost::ptr_set<VersionedObject> objects = v.getObjects();
     boost::ptr_set<VersionedObject>::iterator o;
 
     for (o = objects.begin(); o != objects.end(); ++o)
-    {
-      int ret = o->commit(v);
-
-      if (ret < 0)
-        return -22;
-    }
+      o->commit(v);
 
     if (syncMode == Options::ClientSync::AT_EACH_COMMIT)
-    {
-      int ret = refdb.add(v, v.getObjects());
-
-      if (ret)
-        return ret;
-    }
+      refdb.add(v, v.getObjects());
 
     v.setStatus(Version::COMMITTED);
 
     return refdb.commit(v);
   }
 
-  int SingleClientCoordinator::initRepository()
+  void SingleClientCoordinator::initRepository() throw (VersosException)
   {
-    return refdb.init();
+    refdb.init();
   }
 
   bool SingleClientCoordinator::isRepositoryEmpty()
@@ -156,8 +117,8 @@ namespace versos
     return refdb.isEmpty();
   }
 
-  int SingleClientCoordinator::shutdown()
+  void SingleClientCoordinator::shutdown() throw (VersosException)
   {
-    return refdb.close();
+    refdb.close();
   }
 }

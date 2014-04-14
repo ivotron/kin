@@ -3,6 +3,7 @@
 
 #include "versos/version.h"
 #include "versos/options.h"
+#include "versos/versosexception.h"
 
 #include <string>
 
@@ -40,12 +41,15 @@ namespace versos
     /**
      * initializes a repository.
      */
-    int init();
+    void init() throw (VersosException);
 
     /**
-     * checks out a given version. Returns @c Version::NOT_FOUND if the version doesn't exist.
+     * checks out a given version.
+     *
+     * @returns Version::NOT_FOUND if no version is associated with the given ID.
+     * @exception VersosException if Coordinator::checkout throws an exception.
      */
-    const Version& checkout(const std::string& id) const;
+    const Version& checkout(const std::string& id) const throw (VersosException);
 
     // TODO: checkout() only allows access to committed versions. We can add a retrieve() call that allows to 
     // get a staged versions
@@ -53,39 +57,39 @@ namespace versos
     /**
      * returns the latest committed version.
      */
-    const Version& checkoutHEAD() const;
+    const Version& checkoutHEAD() const throw (VersosException);
 
     /**
      * creates a new staged version based on the given parent.
      */
-    Version& create(const std::string& parentId);
+    Version& create(const std::string& parentId) throw (VersosException);
 
     /**
      * creates a new staged version based on the given parent.
      */
-    Version& create(const Version& parent);
+    Version& create(const Version& parent) throw (VersosException);
 
     /**
      * Adds an object to the given version. Fails if version is read only.
      */
-    int add(Version& v, VersionedObject& o);
+    void add(Version& v, VersionedObject& o) throw (VersosException);
     // TODO: add(Version& v, set<VersionedObject> objects);
 
     /**
      * removes an object.
      */
-    int remove(Version& v, VersionedObject& o);
+    void remove(Version& v, VersionedObject& o) throw (VersosException);
 
     /**
      * commits a version. TODO: currently it also updates the HEAD but this will change when we add support 
      * for push(). In other words, commit() should just commit, whereas push() should take care of updating 
      * HEAD and reporting about conflicts.
      */
-    int commit(Version& v);
+    int commit(Version& v) throw (VersosException);
 
     /**
      */
-    void close();
+    void close() throw (VersosException);
 
     /**
      */

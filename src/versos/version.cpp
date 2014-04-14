@@ -5,7 +5,6 @@
 
 namespace versos
 {
-  Version Version::ERROR           = Version("0000000000000000000000000000000000000001");
   Version Version::NOT_FOUND       = Version("0000000000000000000000000000000000000002");
   Version Version::PARENT_FOR_ROOT = Version("0000000000000000000000000000000000000003");
 
@@ -41,80 +40,67 @@ namespace versos
   {
   }
 
-  int Version::add(const boost::ptr_set<VersionedObject>& o)
+  void Version::add(const boost::ptr_set<VersionedObject>& o) throw (VersosException)
   {
     if (!isOK())
-      return -1;
+      throw VersosException("can't add to version with NONE status");
 
     if (isCommitted())
-      return -1;
+      throw VersosException("version " + getId() + " already committed");
 
     boost::ptr_set<VersionedObject>::iterator it;
 
     for (it = o.begin(); it != o.end(); ++it)
-    {
-      int ret = add(*it);
-
-      if (ret)
-        return ret;
-    }
-
-    return 0;
+      add(*it);
   }
 
-  int Version::remove(const boost::ptr_set<VersionedObject>& o)
+  void Version::remove(const boost::ptr_set<VersionedObject>& o) throw (VersosException)
   {
     if (!isOK())
-      return -1;
+      throw VersosException("can't add to version with NONE status");
 
     if (isCommitted())
-      return -2;
+      throw VersosException("version " + getId() + " already committed");
 
     boost::ptr_set<VersionedObject>::iterator it;
 
     for (it = o.begin(); it != o.end(); ++it)
-    {
-      int ret = remove(*it);
-
-      if (ret)
-        return ret;
-    }
-
-    return 0;
+      remove(*it);
   }
 
-  int Version::add(const VersionedObject& o)
+  void Version::add(const VersionedObject& o) throw (VersosException)
   {
     if (!isOK())
-      return -1;
+      throw VersosException("can't add to version with NONE status");
 
     if (isCommitted())
-      return -1;
+      throw VersosException("version " + getId() + " already committed");
 
     if (contains(o))
-      return -12;
+      throw VersosException("version " + getId() + " already contains object " +  o.getId(*this));
 
     addedObjects.insert(o.clone());
-
-    return 0;
   }
 
-  int Version::remove(const VersionedObject& o)
+  void Version::remove(const VersionedObject& o) throw (VersosException)
   {
     if (!isOK())
-      return -2;
+      throw VersosException("can't add to version with NONE status");
 
     if (isCommitted())
-      return -3;
+      throw VersosException("version " + getId() + " already committed");
 
     // TODO: check if user has written to the object, in which case we should fail (or not, based on a knob)
 
     if (!contains(o))
-      return -15;
+      throw VersosException("version " + getId() + " doesn't contain object " +  o.getId(*this));
 
     removedObjects.insert(o.clone());
+  }
 
-    return 0;
+  bool Version::isOK() const
+  {
+    return (*this != Version::NOT_FOUND);
   }
 
   void Version::setStatus(Status newStatus)
@@ -130,11 +116,6 @@ namespace versos
   bool Version::isCommitted() const
   {
     return status == COMMITTED;
-  }
-
-  bool Version::isOK() const
-  {
-    return (*this != Version::NOT_FOUND && *this != Version::ERROR);
   }
 
   bool Version::contains(const VersionedObject& o) const
@@ -218,8 +199,6 @@ namespace versos
   {
     if (*this == Version::NOT_FOUND)
       o << "NOT_FOUND";
-    else if (*this == Version::ERROR)
-      o << "ERROR";
     else
       o << getId();
 

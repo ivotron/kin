@@ -23,21 +23,21 @@ namespace versos
     virtual ~RedisRefDB();
 
     // inherited
-    int open();
-    int close();
-    bool isEmpty() const;
-    int makeHEAD(const Version& v);
-    int commit(const Version& v);
-    int getLockCount(const Version& v, const std::string& lockKey);
-    int add(const Version& v, const boost::ptr_set<VersionedObject>& o);
-    int add(const Version& v, const VersionedObject& o);
-    int remove(const Version& v, const VersionedObject& o);
-    int remove(const Version& v, const boost::ptr_set<VersionedObject>& o);
+    void open() throw (VersosException);
+    void close() throw (VersosException);
+    bool isEmpty() const throw (VersosException);
+    void makeHEAD(const Version& v) throw (VersosException);
+    int commit(const Version& v) throw (VersosException);
+    int getLockCount(const Version& v, const std::string& lockKey) throw (VersosException);
+    void add(const Version& v, const boost::ptr_set<VersionedObject>& o) throw (VersosException);
+    void add(const Version& v, const VersionedObject& o) throw (VersosException);
+    void remove(const Version& v, const VersionedObject& o) throw (VersosException);
+    void remove(const Version& v, const boost::ptr_set<VersionedObject>& o) throw (VersosException);
   protected:
-    int insert(Version& v, LockType lock, const std::string& lockKey);
-    Version& get(const std::string& id);
+    void insert(Version& v, LockType lock, const std::string& lockKey) throw (VersosException);
+    Version& get(const std::string& id) throw (VersosException);
   private:
-    int getLockCount(const std::string& id);
+    int getLockCount(const std::string& id) throw (VersosException);
   };
 }
 #endif

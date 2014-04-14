@@ -67,6 +67,7 @@ TEST(mpicoordinator_test, NONE_object_containment)
 
   versos::Repository repo("mydataset", o);
 
+  //ASSERT_NO_THROW(repo.checkoutHEAD());
   const versos::Version& head = repo.checkoutHEAD();
 
   ASSERT_TRUE(head.isCommitted()) << "at rank " << myRank;
@@ -75,56 +76,59 @@ TEST(mpicoordinator_test, NONE_object_containment)
 
   ASSERT_TRUE(head.isOK());
 
-  versos::Version& v1 = repo.create(head);
+  versos::Version* v1;
 
-  ASSERT_TRUE(v1.isOK());
-  ASSERT_FALSE(v1.isCommitted());
-  ASSERT_EQ(versos::Version::STAGED, v1.getStatus());
-  ASSERT_EQ(0u, v1.size());
-  ASSERT_NE(versos::Version::PARENT_FOR_ROOT.getId(), v1.getId());
+  ASSERT_NO_THROW(v1 = &repo.create(head));
+
+  ASSERT_TRUE(v1->isOK());
+  ASSERT_FALSE(v1->isCommitted());
+  ASSERT_EQ(versos::Version::STAGED, v1->getStatus());
+  ASSERT_EQ(0u, v1->size());
+  ASSERT_NE(versos::Version::PARENT_FOR_ROOT.getId(), v1->getId());
 
   versos::MemVersionedObject o1(repo, "o" + Utils::to_str(myRank));
 
-  ASSERT_NE(0, repo.add(v1, o1));
+  ASSERT_ANY_THROW(repo.add(*v1, o1));
 
-  ASSERT_FALSE(v1.isCommitted());
-  ASSERT_EQ(versos::Version::STAGED, v1.getStatus());
-  ASSERT_EQ(0u, v1.size());
-  ASSERT_FALSE(v1.contains(o1));
+  ASSERT_FALSE(v1->isCommitted());
+  ASSERT_EQ(versos::Version::STAGED, v1->getStatus());
+  ASSERT_EQ(0u, v1->size());
+  ASSERT_FALSE(v1->contains(o1));
 
-  ASSERT_EQ(0, repo.commit(v1));
+  ASSERT_EQ(0, repo.commit(*v1));
 
-  ASSERT_EQ(v1, repo.checkoutHEAD());
-  ASSERT_TRUE(v1.isCommitted());
-  ASSERT_EQ(0u, v1.size());
+  ASSERT_EQ(*v1, repo.checkoutHEAD());
+  ASSERT_TRUE(v1->isCommitted());
+  ASSERT_EQ(0u, v1->size());
   MPI_Barrier(comm);
 
-  versos::Version& v2 = repo.create(v1);
+  versos::Version* v2;
+  ASSERT_NO_THROW(v2 = &repo.create(*v1));
 
-  ASSERT_NE(v1, v2);
-  ASSERT_TRUE(v2.isOK());
-  ASSERT_FALSE(v2.isCommitted());
-  ASSERT_EQ(versos::Version::STAGED, v2.getStatus());
-  ASSERT_EQ(0u, v2.size());
-  ASSERT_FALSE(v2.contains(o1));
+  ASSERT_NE(*v1, *v2);
+  ASSERT_TRUE(v2->isOK());
+  ASSERT_FALSE(v2->isCommitted());
+  ASSERT_EQ(versos::Version::STAGED, v2->getStatus());
+  ASSERT_EQ(0u, v2->size());
+  ASSERT_FALSE(v2->contains(o1));
 
-  ASSERT_NE(0, repo.remove(v2, o1));
+  ASSERT_ANY_THROW(repo.remove(*v2, o1));
 
-  ASSERT_FALSE(v2.isCommitted());
-  ASSERT_EQ(0u, v2.size());
-  ASSERT_FALSE(v2.contains(o1));
+  ASSERT_FALSE(v2->isCommitted());
+  ASSERT_EQ(0u, v2->size());
+  ASSERT_FALSE(v2->contains(o1));
 
-  ASSERT_EQ(0, repo.commit(v2));
+  ASSERT_EQ(0, repo.commit(*v2));
 
-  ASSERT_EQ(v2, repo.checkoutHEAD());
-  ASSERT_TRUE(v2.isCommitted());
-  ASSERT_EQ(0u, v2.size());
-  ASSERT_FALSE(v2.contains(o1));
+  ASSERT_EQ(*v2, repo.checkoutHEAD());
+  ASSERT_TRUE(v2->isCommitted());
+  ASSERT_EQ(0u, v2->size());
+  ASSERT_FALSE(v2->contains(o1));
 
   // exec. summary :)
   ASSERT_FALSE(head.contains(o1));
-  ASSERT_FALSE(v1.contains(o1));
-  ASSERT_FALSE(v2.contains(o1));
+  ASSERT_FALSE(v1->contains(o1));
+  ASSERT_FALSE(v2->contains(o1));
 }
 
 TEST(mpicoordinator_test, AT_EACH_COMMIT_object_containment)
@@ -160,7 +164,7 @@ TEST(mpicoordinator_test, AT_EACH_COMMIT_object_containment)
 
   versos::MemVersionedObject o1(repo, "o1-" + Utils::to_str(myRank));
 
-  ASSERT_EQ(0, repo.add(v1, o1));
+  ASSERT_NO_THROW(repo.add(v1, o1));
 
   ASSERT_FALSE(v1.isCommitted());
   ASSERT_EQ(versos::Version::STAGED, v1.getStatus());
@@ -209,7 +213,7 @@ TEST(mpicoordinator_test, AT_EACH_COMMIT_object_containment)
   // let's add one more object from each rank
   versos::MemVersionedObject o2(repo, "o2-" + Utils::to_str(myRank));
 
-  ASSERT_EQ(0, repo.add(v2, o2));
+  ASSERT_NO_THROW(repo.add(v2, o2));
   ASSERT_FALSE(v2.isCommitted());
 
   // we added locally, so we should have only the local object
@@ -228,7 +232,7 @@ TEST(mpicoordinator_test, AT_EACH_COMMIT_object_containment)
   versos::MemVersionedObject o3(repo, "o3-" + Utils::to_str(myRank));
 
   if (myRank % 2 == 1)
-    ASSERT_EQ(0, repo.add(v2, o3));
+    ASSERT_NO_THROW(repo.add(v2, o3));
 
   ASSERT_FALSE(v2.isCommitted());
 
@@ -255,7 +259,7 @@ TEST(mpicoordinator_test, AT_EACH_COMMIT_object_containment)
 
   // ok, so let's add the object to the even-numbered ranks and commit again
   if (myRank % 2 == 0)
-    ASSERT_EQ(0, repo.add(v2, o3));
+    ASSERT_NO_THROW(repo.add(v2, o3));
 
   ASSERT_EQ(0, repo.commit(v2));
 
@@ -281,7 +285,7 @@ TEST(mpicoordinator_test, AT_EACH_COMMIT_object_containment)
   ASSERT_EQ(versos::Version::STAGED, v3.getStatus());
 
   // now let's remove the one added in v1
-  ASSERT_EQ(0, repo.remove(v3, o1));
+  ASSERT_NO_THROW(repo.remove(v3, o1));
   ASSERT_FALSE(v3.isCommitted());
 
   // we removed locally, so we should have only one less
@@ -357,7 +361,7 @@ TEST(mpicoordinator_test, AT_EACH_ADD_OR_REMOVE_object_containment)
 
   versos::MemVersionedObject o1(repo, "o1-" + Utils::to_str(myRank));
 
-  ASSERT_EQ(0, repo.add(v1, o1));
+  ASSERT_NO_THROW(repo.add(v1, o1));
 
   ASSERT_FALSE(v1.isCommitted());
   ASSERT_EQ(versos::Version::STAGED, v1.getStatus());
@@ -401,7 +405,7 @@ TEST(mpicoordinator_test, AT_EACH_ADD_OR_REMOVE_object_containment)
   versos::MemVersionedObject o3(repo, "o3-" + Utils::to_str(myRank));
 
   // let's add one more object
-  ASSERT_EQ(0, repo.add(v2, o2));
+  ASSERT_NO_THROW(repo.add(v2, o2));
   ASSERT_FALSE(v2.isCommitted());
 
   // we added at every rank, so we should have one more object
@@ -413,7 +417,7 @@ TEST(mpicoordinator_test, AT_EACH_ADD_OR_REMOVE_object_containment)
   }
 
   // let's add a third one
-  ASSERT_EQ(0, repo.add(v2, o3));
+  ASSERT_NO_THROW(repo.add(v2, o3));
   ASSERT_FALSE(v2.isCommitted());
 
   MPI_Barrier(comm);
@@ -442,7 +446,7 @@ TEST(mpicoordinator_test, AT_EACH_ADD_OR_REMOVE_object_containment)
   ASSERT_EQ(versos::Version::STAGED, v3.getStatus());
 
   // now let's remove the one added in v1
-  ASSERT_EQ(0, repo.remove(v3, o1));
+  ASSERT_NO_THROW(repo.remove(v3, o1));
   ASSERT_FALSE(v3.isCommitted());
 
   // we removed globally, so we should have commSize num of objects less
@@ -499,7 +503,7 @@ TEST(mpicoordinator_test, wrong_mode_for_object_containment_operations)
   versos::MemVersionedObject ob(repo, "o1-" + Utils::to_str(myRank));
 
   // since we're in NONE mode, we get errors
-  ASSERT_NE(0, repo.add(v1, ob));
+  ASSERT_ANY_THROW(repo.add(v1, ob));
 
   // we have to create repo with default AT_EACH_COMMIT (default) or AT_EACH_ADD_OR_REMOVE in order to be able 
   // to add to it, see next test:
@@ -523,9 +527,9 @@ TEST(mpicoordinator_test, values_between_tests)
 
   versos::MemVersionedObject o1(repo, "o1-" + Utils::to_str(myRank));
 
-  ASSERT_EQ(0, repo.add(v1, o1));
+  ASSERT_NO_THROW(repo.add(v1, o1));
 
-  ASSERT_EQ(0, o1.write(v1, "first"));
+  ASSERT_NO_THROW(o1.put(v1, "first"));
 
   ASSERT_EQ(0, repo.commit(v1));
 
@@ -534,22 +538,19 @@ TEST(mpicoordinator_test, values_between_tests)
   ASSERT_TRUE(v2.isOK());
   ASSERT_NE(v1, v2);
 
-  ASSERT_EQ(0, o1.write(v2, "second"));
+  ASSERT_NO_THROW(o1.put(v2, "second"));
 
   std::string o1v1;
   std::string o1v2;
 
-  ASSERT_EQ(0, o1.read(v1, o1v1));
-  ASSERT_EQ(0, o1.read(v2, o1v2));
-
-  ASSERT_EQ("first", o1v1);
-  ASSERT_EQ("second", o1v2);
+  ASSERT_EQ("first", o1.get(v1));
+  ASSERT_EQ("second", o1.get(v2));
 
   versos::MemVersionedObject o2(repo, "o2-" + Utils::to_str(myRank));
   // TODO: the following aborts:
   //
   // ASSERT_NE(0, repo.add(v1, o2));
-  ASSERT_EQ(0, repo.add(v2, o2));
+  ASSERT_NO_THROW(repo.add(v2, o2));
   ASSERT_EQ(0, repo.commit(v2));
 }
 

@@ -32,7 +32,7 @@ TEST(singlecoordinator, basic_commit_of_root)
 
   versos::MemVersionedObject o1(repo, "o1");
 
-  ASSERT_EQ(0, repo.add(v1, o1));
+  ASSERT_NO_THROW(repo.add(v1, o1));
 
   ASSERT_FALSE(v1.isCommitted());
   ASSERT_EQ(versos::Version::STAGED, v1.getStatus());
@@ -55,7 +55,7 @@ TEST(singlecoordinator, basic_commit_of_root)
   ASSERT_EQ(1u, v2.size());
   ASSERT_TRUE(v2.contains(o1));
 
-  ASSERT_EQ(0, repo.remove(v2, o1));
+  ASSERT_NO_THROW(repo.remove(v2, o1));
 
   ASSERT_FALSE(v2.isCommitted());
   ASSERT_EQ(0u, v2.size());
@@ -101,9 +101,9 @@ TEST(singlecoordinator, values_between_versions)
 
   versos::MemVersionedObject o1(repo, "o1");
 
-  ASSERT_EQ(0, repo.add(v1, o1));
+  ASSERT_NO_THROW(repo.add(v1, o1));
 
-  ASSERT_EQ(0, o1.write(v1, "first"));
+  ASSERT_NO_THROW(o1.put(v1, "first"));
 
   ASSERT_EQ(0, repo.commit(v1));
 
@@ -111,16 +111,10 @@ TEST(singlecoordinator, values_between_versions)
 
   ASSERT_NE(v1, v2);
 
-  ASSERT_EQ(0, o1.write(v2, "second"));
+  ASSERT_NO_THROW(o1.put(v2, "second"));
 
-  std::string o1v1;
-  std::string o1v2;
-
-  ASSERT_EQ(0, o1.read(v1, o1v1));
-  ASSERT_EQ(0, o1.read(v2, o1v2));
-
-  ASSERT_EQ("first", o1v1);
-  ASSERT_EQ("second", o1v2);
+  ASSERT_EQ("first", o1.get(v1));
+  ASSERT_EQ("second", o1.get(v2));
 }
 
 int main(int argc, char **argv)

@@ -31,9 +31,9 @@ namespace versos
     virtual ~RadosVersionedObject();
 
     // inherited
-    int create(const Version& parent, const Version& child);
-    int commit(const Version& v);
-    int remove(const Version& v);
+    void create(const Version& parent, const Version& child) throw (VersosException);
+    void commit(const Version& v) throw (VersosException);
+    void remove(const Version& v) throw (VersosException);
 
     // rados-specific
     int write(const Version& v, librados::bufferlist& bl, size_t len, uint64_t off);

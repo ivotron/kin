@@ -1,6 +1,8 @@
 #ifndef COORDINATOR_H
 #define COORDINATOR_H
 
+#include "versos/versosexception.h"
+
 #include <string>
 
 #include <boost/ptr_container/ptr_set.hpp>
@@ -25,7 +27,7 @@ namespace versos
      * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
      * etc..), since @c Repository should have done this check already.
      */
-    virtual int commit(Version& v) = 0;
+    virtual int commit(Version& v) throw (VersosException) = 0;
 
     /**
      * makes the given version the head of the repo. Fails if head in the refdb is not the parent
@@ -33,7 +35,7 @@ namespace versos
      * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
      * etc..), since @c Repository should have done this check already.
      */
-    virtual int makeHEAD(const Version& v) = 0;
+    virtual void makeHEAD(const Version& v) throw (VersosException) = 0;
 
     /**
      * open the db
@@ -43,7 +45,7 @@ namespace versos
     /**
      * retrieves the id of the latest committed version.
      */
-    virtual int getHeadId(std::string& id) = 0;
+    virtual std::string getHeadId() throw (VersosException) = 0;
 
     /**
      * checks out a version.
@@ -51,7 +53,7 @@ namespace versos
      * We can safely assume that the returned by this will be checked by @c Repository, so we can return 
      * whatever the underlying DB is giving us.
      */
-    virtual const Version& checkout(const std::string& commitId) = 0;
+    virtual const Version& checkout(const std::string& commitId) throw (VersosException) = 0;
 
     /**
      * creates a version based on a given one.
@@ -59,7 +61,7 @@ namespace versos
      * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
      * etc..), since @c Repository should have done this check already.
      */
-    virtual Version& create(const Version& parent) = 0;
+    virtual Version& create(const Version& parent) throw (VersosException) = 0;
 
     /**
      * adds an object to a version
@@ -67,7 +69,7 @@ namespace versos
      * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
      * etc..), since @c Repository should have done this check already.
      */
-    virtual int add(Version& v, VersionedObject& o) = 0;
+    virtual void add(Version& v, VersionedObject& o) throw (VersosException) = 0;
 
     /**
      * removes an object from a version
@@ -75,12 +77,12 @@ namespace versos
      * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
      * etc..), since @c Repository should have done this check already.
      */
-    virtual int remove(Version& v, VersionedObject& o) = 0;
+    virtual void remove(Version& v, VersionedObject& o) throw (VersosException) = 0;
 
     /**
      * initializes an empty repo. fails if non-empty.
      */
-    virtual int initRepository() = 0;
+    virtual void initRepository() throw (VersosException) = 0;
 
     /**
      * whether repo is empty.
@@ -90,7 +92,7 @@ namespace versos
     /**
      * shuts down. No more operations can be done after this is invoked.
      */
-    virtual int shutdown() = 0;
+    virtual void shutdown() throw (VersosException) = 0;
   };
 }
 #endif

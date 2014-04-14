@@ -17,8 +17,6 @@
   #include "versos/refdb/redisrefdb.h"
 #endif
 
-#include <stdexcept>
-
 namespace versos
 {
   Repository::Repository(const std::string& name, const Options& o) : name(name)
@@ -30,12 +28,12 @@ namespace versos
       refdb = new RedisRefDB(name, o);
 #endif
     else
-      throw std::runtime_error("unknown metadb class");
+      throw VersosException("unknown metadb class");
 
     refdb->open();
 
-    if (o.metadb_initialize_if_empty == true && refdb->isEmpty() && refdb->init())
-      throw std::runtime_error("refdb.init");
+    if (o.metadb_initialize_if_empty == true && refdb->isEmpty())
+      refdb->init();
 
     if (o.coordinator_type == Options::Coordinator::SINGLE_CLIENT)
       coordinator = new SingleClientCoordinator(*refdb, o);
@@ -46,10 +44,10 @@ namespace versos
       coordinator = new MpiCoordinator(*refdb, o);
 #endif
     else
-      throw std::runtime_error("unknown coordinator class");
+      throw VersosException("unknown coordinator class");
 
     if (coordinator == NULL || refdb == NULL)
-      throw std::runtime_error("none");
+      throw VersosException("none");
   }
 
   Repository::~Repository()
@@ -63,54 +61,34 @@ namespace versos
     return name;
   }
 
-  const Version& Repository::checkout(const std::string& id) const
+  const Version& Repository::checkout(const std::string& id) const throw (VersosException)
   {
     return coordinator->checkout(id);
   }
 
-  const Version& Repository::checkoutHEAD() const
+  const Version& Repository::checkoutHEAD() const throw (VersosException)
   {
-    std::string headId;
-
-    if (coordinator->getHeadId(headId))
-      return Version::ERROR;
-
-    return checkout(headId);
+    return checkout(coordinator->getHeadId());
   }
 
-  int Repository::add(Version& v, VersionedObject& o)
+  void Repository::add(Version& v, VersionedObject& o) throw (VersosException)
   {
-    int ret = coordinator->add(v, o);
-
-    if(ret)
-      return ret;
-
-    return 0;
+    coordinator->add(v, o);
   }
 
-  int Repository::remove(Version& v, VersionedObject& o)
+  void Repository::remove(Version& v, VersionedObject& o) throw (VersosException)
   {
-    int ret = coordinator->remove(v, o);
-
-    if (ret)
-      return ret;
-
-    return 0;
+    coordinator->remove(v, o);
   }
 
-  int Repository::commit(Version& v)
+  int Repository::commit(Version& v) throw (VersosException)
   {
-    int cnt = coordinator->commit(v);
+    int lockCount = coordinator->commit(v);
 
-    if (cnt < 0)
-      return cnt;
+    if(lockCount == 0)
+      coordinator->makeHEAD(v);
 
-    int ret = coordinator->makeHEAD(v);
-
-    if (ret)
-      return ret;
-
-    return cnt;
+    return lockCount;
   }
 
   bool Repository::isEmpty() const
@@ -118,28 +96,28 @@ namespace versos
     return coordinator->isRepositoryEmpty();
   }
 
-  int Repository::init()
+  void Repository::init() throw (VersosException)
   {
     if (!isEmpty())
-      return -7;
+      throw VersosException("repository not empty");
 
-    return coordinator->initRepository();
+    coordinator->initRepository();
   }
 
-  Version& Repository::create(const Version& parent)
+  Version& Repository::create(const Version& parent) throw (VersosException)
   {
-    if (!parent.isOK() || !parent.isCommitted())
-      return Version::ERROR;
+    if (!parent.isCommitted())
+      throw VersosException("Parent not committed");
 
     return coordinator->create(parent);
   }
 
-  Version& Repository::create(const std::string& parentId)
+  Version& Repository::create(const std::string& parentId) throw (VersosException)
   {
     return coordinator->create(checkout(parentId));
   }
 
-  void Repository::close()
+  void Repository::close() throw (VersosException)
   {
     coordinator->shutdown();
   }

@@ -45,86 +45,126 @@ RedisRefDB::~RedisRefDB()
 {
 }
 
-int RedisRefDB::open()
+void RedisRefDB::open() throw (VersosException)
 {
   try
   {
     redisdb.connect(host);
+    headId = redisdb.get(repoName + "_head");
   }
-  catch (...)
+  catch (std::runtime_error& e)
   {
-    return -100;
+    throw VersosException(e.what());
   }
-
-  headId = redisdb.get(repoName + "_head");
-
-  return 0;
 }
 
-int RedisRefDB::close()
+void RedisRefDB::close() throw (VersosException)
 {
   redisdb.disconnect();
-
-  return 0;
 }
 
-bool RedisRefDB::isEmpty() const
+bool RedisRefDB::isEmpty() const throw (VersosException)
 {
-  std::string value = redisdb.get(repoName + "_head");
-
-  return value.empty();
+  try
+  {
+    std::string value = redisdb.get(repoName + "_head");
+    return value.empty();
+  }
+  catch (std::runtime_error& e)
+  {
+    throw VersosException(e.what());
+  }
 }
 
-int RedisRefDB::makeHEAD(const Version& v)
+void RedisRefDB::makeHEAD(const Version& v) throw (VersosException)
 {
   // TODO: make this atomic
   // {
   if (v.getParentId() != getHeadId())
-    return -54;
-  redisdb.set(repoName + "_head", v.getId());
+    throw VersosException("current HEAD is not equal to version's parent");
+
+  try
+  {
+    redisdb.set(repoName + "_head", v.getId());
   // }
 
-  redisdb.set(repoName + "_" + v.getId() + "_parent", v.getParentId());
-
-  return 0;
+    redisdb.set(repoName + "_" + v.getId() + "_parent", v.getParentId());
+  }
+  catch (std::runtime_error& e)
+  {
+    throw VersosException(e.what());
+  }
 }
 
-int RedisRefDB::commit(const Version& v)
+int RedisRefDB::commit(const Version& v) throw (VersosException)
 {
   MemRefDB::commit(v);
 
-  return redisdb.decr(repoName + "_" + v.getId() + "_locks");
+  try
+  {
+    return redisdb.decr(repoName + "_" + v.getId() + "_locks");
+  }
+  catch (std::runtime_error& e)
+  {
+    throw VersosException(e.what());
+  }
 }
 
-int RedisRefDB::getLockCount(const Version& v, const std::string&)
+int RedisRefDB::getLockCount(const Version& v, const std::string&) throw (VersosException)
 {
   // TODO: check lock key
   return getLockCount(v.getId());
 }
 
-int RedisRefDB::getLockCount(const std::string& id)
+int RedisRefDB::getLockCount(const std::string& id) throw (VersosException)
 {
-  std::string cnt = redisdb.get(repoName + "_" + id + "_locks");
+  std::string cnt;
+
+  try
+  {
+    cnt = redisdb.get(repoName + "_" + id + "_locks");
+  }
+  catch (std::runtime_error& e)
+  {
+    throw VersosException(e.what());
+  }
 
   if (cnt.empty())
-    return -85;
+    throw VersosException("no _locks entry in RedisDB");
 
-  return boost::lexical_cast<int>(cnt);
+  try
+  {
+    return boost::lexical_cast<int>(cnt);
+  }
+  catch (boost::bad_lexical_cast& e)
+  {
+    throw VersosException(e.what());
+  }
 }
 
-Version& RedisRefDB::get(const std::string& id)
+Version& RedisRefDB::get(const std::string& id) throw (VersosException)
 {
   Version& v = MemRefDB::get(id);
 
-  if (v.isOK())
+  if (v != Version::NOT_FOUND)
     return v;
 
   if (getLockCount(id) != 0)
-    // not committed
-    return Version::ERROR;
+    throw VersosException("version not committed yet");
 
-  std::string parentId = redisdb.get(repoName + "_" + id + "_parent");
-  std::list<std::string> objIds = redisdb.lrange(repoName + "_" + id + "_objects 0 -1");
+  std::string parentId;
+  std::list<std::string> objIds;
+
+  try
+  {
+    parentId = redisdb.get(repoName + "_" + id + "_parent");
+    objIds = redisdb.lrange(repoName + "_" + id + "_objects 0 -1");
+  }
+  catch (std::runtime_error& e)
+  {
+    throw VersosException(e.what());
+  }
+
   boost::ptr_set<VersionedObject> objects;
 
   for(std::list<std::string>::iterator it = objIds.begin(); it != objIds.end(); ++it)
@@ -132,7 +172,7 @@ Version& RedisRefDB::get(const std::string& id)
     std::vector<std::string> objectMeta = Utils::split(*it, '_');
 
     if (objectMeta.size() != 3)
-      throw std::runtime_error("Expecting 3 elements but got " + objectMeta.size());
+      throw VersosException("Expecting 3 elements but got " + objectMeta.size());
 
     objects.insert(new VersionedObject(objectMeta[0], objectMeta[1], objectMeta[2]));
   }
@@ -144,92 +184,120 @@ Version& RedisRefDB::get(const std::string& id)
   return MemRefDB::get(id);
 }
 
-int RedisRefDB::add(const Version& v, const VersionedObject& o)
+void RedisRefDB::add(const Version& v, const VersionedObject& o) throw (VersosException)
 {
-  std::string oid;
+  std::string oid = o.getId(v);
 
-  if (o.getId(v, oid))
-    return -103;
+  int cnt;
 
-  if (redisdb.sadd(repoName + "_" + v.getId() + "_objects", oid) != 1)
-    return -104;
+  try
+  {
+    cnt = redisdb.sadd(repoName + "_" + v.getId() + "_objects", oid);
+  }
+  catch (std::runtime_error& e)
+  {
+    throw VersosException(e.what());
+  }
 
-  return 0;
+  if (cnt != 1)
+    throw VersosException("Object already in given version");
 }
 
-int RedisRefDB::remove(const Version& v, const VersionedObject& o)
+void RedisRefDB::remove(const Version& v, const VersionedObject& o) throw (VersosException)
 {
-  std::string oid;
+  std::string oid = o.getId(v);
 
-  if (o.getId(v, oid))
-    return -103;
+  int cnt;
 
-  if (redisdb.srem(repoName + "_" + v.getId() + "_objects", oid) != 1)
-    return -104;
+  try
+  {
+    cnt = redisdb.srem(repoName + "_" + v.getId() + "_objects", oid);
+  }
+  catch (std::runtime_error& e)
+  {
+    throw VersosException(e.what());
+  }
 
-  return 0;
+  if (cnt != 1)
+    throw VersosException("Object not removed from version");
 }
 
-int RedisRefDB::add(const Version& v, const boost::ptr_set<VersionedObject>& o)
+void RedisRefDB::add(const Version& v, const boost::ptr_set<VersionedObject>& o) throw (VersosException)
 {
   std::list<std::string> ids;
 
   boost::ptr_set<VersionedObject>::iterator it;
 
   for (it = o.begin(); it != o.end(); ++it)
+    ids.push_back(it->getId(v));
+
+  unsigned long cnt;
+
+  try
   {
-    std::string oid;
-
-    if (it->getId(v, oid))
-      return -103;
-
-    ids.push_back(oid);
+    cnt = redisdb.sadd(repoName + "_" + v.getId() + "_objects", ids);
+  }
+  catch (std::runtime_error& e)
+  {
+    throw VersosException(e.what());
   }
 
-  if (redisdb.sadd(repoName + "_" + v.getId() + "_objects", ids) != (long long) ids.size())
-    return -105;
-
-  return 0;
+  if (cnt != ids.size())
+    throw VersosException("One or more objects not added to version");
 }
 
-int RedisRefDB::remove(const Version& v, const boost::ptr_set<VersionedObject>& o)
+void RedisRefDB::remove(const Version& v, const boost::ptr_set<VersionedObject>& o) throw (VersosException)
 {
   std::list<std::string> ids;
 
   boost::ptr_set<VersionedObject>::iterator it;
 
   for (it = o.begin(); it != o.end(); ++it)
+    ids.push_back(it->getId(v));
+
+  unsigned long cnt;
+
+  try
   {
-    std::string oid;
-
-    if (it->getId(v, oid))
-      return -103;
-
-    ids.push_back(oid);
+    cnt = redisdb.srem(repoName + "_" + v.getId() + "_objects", ids);
+  }
+  catch (std::runtime_error& e)
+  {
+    throw VersosException(e.what());
   }
 
-  if (redisdb.srem(repoName + "_" + v.getId() + "_objects", ids) != (long long) ids.size())
-    return -105;
-
-  return 0;
+  if (cnt != ids.size())
+    throw VersosException("One or more objects not removed from version");
 }
 
-int RedisRefDB::insert(Version& v, LockType lock, const std::string& lockKey)
+void RedisRefDB::insert(Version& v, LockType lock, const std::string& lockKey) throw (VersosException)
 {
-  int ret = MemRefDB::insert(v, lock, lockKey);
+  int cnt;
 
-  if (ret < 0)
-    return ret;
+  MemRefDB::insert(v, lock, lockKey);
 
-  int cnt = redisdb.incr(repoName + "_" + v.getId() + "_locks");
+  try
+  {
+    cnt = redisdb.incr(repoName + "_" + v.getId() + "_locks");
+  }
+  catch (std::runtime_error& e)
+  {
+    throw VersosException(e.what());
+  }
 
   if (cnt == 2 && lock == RefDB::EXCLUSIVE_LOCK)
   {
-    redisdb.decr(repoName + "_" + v.getId() + "_locks");
-    return -109;
-  }
+    try
+    {
+      redisdb.decr(repoName + "_" + v.getId() + "_locks");
+    }
+    catch (std::runtime_error& e)
+    {
+      throw VersosException(e.what());
+    }
 
-  return cnt;
+    throw VersosException("Can't lock more than once in EXCLUSIVE_LOCK");
+  }
 }
 
 } // namespace

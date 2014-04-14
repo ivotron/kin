@@ -46,17 +46,15 @@ namespace versos
   {
   }
 
-  int VersionedObject::getId(const Version& v, std::string& id) const
+  std::string VersionedObject::getId(const Version& v) const throw (VersosException)
   {
     if (!v.isOK())
-      return -90;
+      throw VersosException("Bad version");
 
     // TODO: check for containment
 
     // TODO: maintain a cache of generated ids, so that we don't have this concatenation overhead
-    id = interfaceName + "_" + repoName + "_" + baseName + "_" + to_str(v.getId());
-
-    return 0;
+    return interfaceName + "_" + repoName + "_" + baseName + "_" + to_str(v.getId());
   }
 
   const std::string& VersionedObject::getInterfaceName() const
@@ -72,19 +70,16 @@ namespace versos
     return repoName;
   }
 
-  int VersionedObject::commit(const Version&)
+  void VersionedObject::commit(const Version&) throw (VersosException)
   {
-    return 0;
   }
 
-  int VersionedObject::remove(const Version&)
+  void VersionedObject::remove(const Version&) throw (VersosException)
   {
-    return 0;
   }
 
-  int VersionedObject::create(const Version&, const Version&)
+  void VersionedObject::create(const Version&, const Version&) throw (VersosException)
   {
-    return 0;
   }
 
   VersionedObject* VersionedObject::clone() const

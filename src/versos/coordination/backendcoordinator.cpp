@@ -15,20 +15,18 @@ namespace versos
   {
   }
 
-  Version& BackendCoordinator::create(const Version& parent)
+  Version& BackendCoordinator::create(const Version& parent) throw (VersosException)
   {
     return SingleClientCoordinator::create(parent, RefDB::SHARED_LOCK, hashSeed);
   }
 
-  int BackendCoordinator::makeHEAD(const Version& v)
+  void BackendCoordinator::makeHEAD(const Version& v) throw (VersosException)
   {
     if (refdb.getLockCount(v, hashSeed) == 0)
-      return refdb.makeHEAD(v);
-    else
-      return 0;
+      refdb.makeHEAD(v);
   }
 
-  int BackendCoordinator::commit(Version& v)
+  int BackendCoordinator::commit(Version& v) throw (VersosException)
   {
     if (!v.isOK())
       return -4;
@@ -37,20 +35,10 @@ namespace versos
     boost::ptr_set<VersionedObject>::iterator o;
 
     for (o = objects.begin(); o != objects.end(); ++o)
-    {
-      int ret = o->commit(v);
-
-      if (ret)
-        return -22;
-    }
+      o->commit(v);
 
     if (syncMode == Options::ClientSync::AT_EACH_COMMIT)
-    {
-      int ret = refdb.add(v, v.getObjects());
-
-      if (ret)
-        return ret;
-    }
+      refdb.add(v, v.getObjects());
 
     v.setStatus(Version::COMMITTED);
 
