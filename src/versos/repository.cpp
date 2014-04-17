@@ -30,11 +30,6 @@ namespace versos
     else
       throw VersosException("unknown metadb class");
 
-    refdb->open();
-
-    if (o.metadb_initialize_if_empty == true && refdb->isEmpty())
-      refdb->init();
-
     if (o.coordinator_type == Options::Coordinator::SINGLE_CLIENT)
       coordinator = new SingleClientCoordinator(*refdb, o);
     else if (o.coordinator_type == Options::Coordinator::BACKEND)
@@ -47,7 +42,13 @@ namespace versos
       throw VersosException("unknown coordinator class");
 
     if (coordinator == NULL || refdb == NULL)
+      // sanity check
       throw VersosException("none");
+
+    refdb->open();
+
+    if (o.metadb_initialize_if_empty == true && coordinator->isRepositoryEmpty())
+      coordinator->initRepository();
   }
 
   Repository::~Repository()
@@ -98,9 +99,6 @@ namespace versos
 
   void Repository::init() throw (VersosException)
   {
-    if (!isEmpty())
-      throw VersosException("repository not empty");
-
     coordinator->initRepository();
   }
 

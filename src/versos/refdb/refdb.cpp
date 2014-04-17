@@ -25,7 +25,11 @@ namespace versos
   {
     Version v(Version::PARENT_FOR_ROOT);
 
-    insert(v);
+    // we create in shared lock to avoid race conditions for repositories that are initialized by a parallel 
+    // application (i.e. a version with multiple participants). For example: an MPI app using the 
+    // BackendCoordinator can experience race conditions when initializing the repo. By having the repo 
+    // created in shared mode, we just wait for the last to commit.
+    insert(v, SHARED_LOCK, "");
     commit(v);
     makeHEAD(v);
 

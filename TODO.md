@@ -119,6 +119,10 @@ We first describe all the possible coordination scenarios
 
 # refdb
 
+  - refactor ID assignment. This should be implementation-specific:
+      - SHA1
+      - timestamp
+      - sequence number
   - make use of the lockKey
 
 ## memrefdb
@@ -127,8 +131,21 @@ We first describe all the possible coordination scenarios
 
 ## redisrefdb
 
-  - the counter and the object lists are a potential bottleneck. How 
+ 1. the counter and the object lists are a potential bottleneck. How 
     can we avoid this?
+ 2. the parent of a version is registered when the version is 
+    committed. Ideally, we would like to register the parent of a 
+    version when we create the version.
+ 3. we might want to impose the restriction over the lock counter 
+    that once a counter has started to decrease, i.e. clients have 
+    started to commit, we disallow the lock increase. In other words, 
+    once a set of clients "registered" by increasing the counter, no 
+    other new client should "come late to the party".
+ 4. With 3, we can solve 2 by registering the parent id of a version 
+    when a version is created i.e. `cnt == 0`. This is safe to do 
+    since by 3, we would have the certainty that `cnt` won't decrease 
+    and then increase again, once the counter has started to decrease, 
+    it will keep doing so.
 
 ## mpirefdb
 

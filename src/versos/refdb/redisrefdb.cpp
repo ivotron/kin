@@ -94,6 +94,8 @@ void RedisRefDB::makeHEAD(const Version& v) throw (VersosException)
   {
     throw VersosException(e.what());
   }
+
+  headId = v.getId();
 }
 
 int RedisRefDB::commit(const Version& v) throw (VersosException)

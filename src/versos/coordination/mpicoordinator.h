@@ -36,6 +36,7 @@ namespace versos
     void remove(Version& v, VersionedObject& o) throw (VersosException);
     int commit(Version& v) throw (VersosException);
     void makeHEAD(const Version& v) throw (VersosException);
+    void initRepository() throw (VersosException);
     bool isRepositoryEmpty() throw (VersosException);
     void shutdown() throw (VersosException);
 
@@ -71,12 +72,6 @@ namespace versos
      */
     void barrier() const;
     // }
-
-  private:
-    /**
-     * initializes the object (common method that multiple constructors call).
-     */
-    void init();
   };
 }
 #endif

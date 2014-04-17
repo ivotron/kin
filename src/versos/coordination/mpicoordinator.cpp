@@ -53,20 +53,11 @@ namespace versos
     SingleClientCoordinator(refdb, o), comm(*((MPI_Comm *) o.mpi_comm), boost::mpi::comm_duplicate), 
     leaderRank(o.mpi_leader_rank), syncMode(o.sync_mode), localRefDB("local")
   {
-    init();
-  }
-
-  void MpiCoordinator::init()
-  {
     if (leaderRank < 0)
-      throw std::runtime_error("leader rank should be positive");
+      throw VersosException("leader rank should be positive");
 
     if (leaderRank > (comm.size() - 1))
-      throw std::runtime_error("leader rank shouldn't be greater than size of MPI communicator");
-
-    // TODO:
-    //   - openDB()
-    //   - initDB()
+      throw VersosException("leader rank shouldn't be greater than size of MPI communicator");
   }
 
   MpiCoordinator::~MpiCoordinator()
@@ -83,6 +74,12 @@ namespace versos
     broadcast(id);
 
     return id;
+  }
+
+  void MpiCoordinator::initRepository() throw (VersosException)
+  {
+    if (imLeader())
+      refdb.init();
   }
 
   const Version& MpiCoordinator::checkout(const std::string& id) throw (VersosException)
