@@ -10,7 +10,7 @@
 namespace versos
 {
   class Version;
-  class VersionedObject;
+  class Object;
   /**
    * coordinates repository-level operations executed by one or more clients.
    *
@@ -69,7 +69,7 @@ namespace versos
      * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
      * etc..), since @c Repository should have done this check already.
      */
-    virtual void add(Version& v, VersionedObject& o) throw (VersosException) = 0;
+    virtual void add(Version& v, Object& o) throw (VersosException) = 0;
 
     /**
      * removes an object from a version
@@ -77,7 +77,7 @@ namespace versos
      * We can safely assume that the version is safe to be operated on (i.e. it's not a Version::NOT_FOUND, 
      * etc..), since @c Repository should have done this check already.
      */
-    virtual void remove(Version& v, VersionedObject& o) throw (VersosException) = 0;
+    virtual void remove(Version& v, Object& o) throw (VersosException) = 0;
 
     /**
      * initializes an empty repo. fails if non-empty.

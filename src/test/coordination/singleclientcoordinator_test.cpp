@@ -1,5 +1,5 @@
 #include "versos/repository.h"
-#include "versos/objectversioning/memversionedobject.h"
+#include "versos/obj/kvobject.h"
 
 #include <gtest/gtest.h>
 
@@ -7,7 +7,7 @@ TEST(singlecoordinator, basic_commit_of_root)
 {
   versos::Options o;
 
-  o.metadb_type = versos::Options::MetaDB::MEM;
+  o.metadb_type = versos::Options::Backend::MEM;
   o.metadb_initialize_if_empty = true;
   o.coordinator_type = versos::Options::Coordinator::SINGLE_CLIENT;
 
@@ -30,14 +30,14 @@ TEST(singlecoordinator, basic_commit_of_root)
   ASSERT_EQ(0u, v1.size());
   ASSERT_NE(versos::Version::PARENT_FOR_ROOT.getId(), v1.getId());
 
-  versos::MemVersionedObject o1(repo, "o1");
+  versos::KVObject o1("o1", "first");
 
   ASSERT_NO_THROW(repo.add(v1, o1));
 
   ASSERT_FALSE(v1.isCommitted());
   ASSERT_EQ(versos::Version::STAGED, v1.getStatus());
   ASSERT_EQ(1u, v1.size());
-  ASSERT_TRUE(v1.contains(o1));
+  ASSERT_TRUE(v1.contains("o1"));
 
   ASSERT_EQ(0, repo.commit(v1));
 
@@ -53,36 +53,36 @@ TEST(singlecoordinator, basic_commit_of_root)
   ASSERT_FALSE(v2.isCommitted());
   ASSERT_EQ(versos::Version::STAGED, v2.getStatus());
   ASSERT_EQ(1u, v2.size());
-  ASSERT_TRUE(v2.contains(o1));
+  ASSERT_TRUE(v2.contains("o1"));
 
   ASSERT_NO_THROW(repo.remove(v2, o1));
 
   ASSERT_FALSE(v2.isCommitted());
   ASSERT_EQ(0u, v2.size());
-  ASSERT_TRUE(v2.getAdded().find(o1) == v2.getAdded().end());
-  ASSERT_FALSE(v2.getParents().find(o1) == v2.getParents().end());
-  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
-  ASSERT_FALSE(v2.contains(o1));
-  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
+  ASSERT_TRUE(v2.getAdded().find("o1") == v2.getAdded().end());
+  ASSERT_FALSE(v2.getParents().find("o1") == v2.getParents().end());
+  ASSERT_FALSE(v2.getRemoved().find("o1") == v2.getRemoved().end());
+  ASSERT_FALSE(v2.contains("o1"));
+  ASSERT_FALSE(v2.getRemoved().find("o1") == v2.getRemoved().end());
 
   ASSERT_EQ(0, repo.commit(v2));
-  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
+  ASSERT_FALSE(v2.getRemoved().find("o1") == v2.getRemoved().end());
 
   ASSERT_EQ(v2, repo.checkoutHEAD());
-  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
+  ASSERT_FALSE(v2.getRemoved().find("o1") == v2.getRemoved().end());
   ASSERT_TRUE(v2.isCommitted());
-  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
+  ASSERT_FALSE(v2.getRemoved().find("o1") == v2.getRemoved().end());
   ASSERT_EQ(versos::Version::COMMITTED, v2.getStatus());
-  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
+  ASSERT_FALSE(v2.getRemoved().find("o1") == v2.getRemoved().end());
   ASSERT_EQ(0u, v2.size());
-  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
-  ASSERT_TRUE(v2.getAdded().find(o1) == v2.getAdded().end());
-  ASSERT_FALSE(v2.getParents().find(o1) == v2.getParents().end());
-  ASSERT_FALSE(v2.getRemoved().find(o1) == v2.getRemoved().end());
-  ASSERT_FALSE(v2.contains(o1));
+  ASSERT_FALSE(v2.getRemoved().find("o1") == v2.getRemoved().end());
+  ASSERT_TRUE(v2.getAdded().find("o1") == v2.getAdded().end());
+  ASSERT_FALSE(v2.getParents().find("o1") == v2.getParents().end());
+  ASSERT_FALSE(v2.getRemoved().find("o1") == v2.getRemoved().end());
+  ASSERT_FALSE(v2.contains("o1"));
 
-  ASSERT_FALSE(head.contains(o1));
-  ASSERT_TRUE(v1.contains(o1));
+  ASSERT_FALSE(head.contains("o1"));
+  ASSERT_TRUE(v1.contains("o1"));
 
 }
 
@@ -90,7 +90,7 @@ TEST(singlecoordinator, values_between_versions)
 {
   versos::Options o;
 
-  o.metadb_type = versos::Options::MetaDB::MEM;
+  o.metadb_type = versos::Options::Backend::MEM;
   o.metadb_initialize_if_empty = true;
   o.coordinator_type = versos::Options::Coordinator::SINGLE_CLIENT;
 
@@ -99,11 +99,10 @@ TEST(singlecoordinator, values_between_versions)
   const versos::Version& head = repo.checkoutHEAD();
   versos::Version& v1 = repo.create(head);
 
-  versos::MemVersionedObject o1(repo, "o1");
+  versos::KVObject o1("o1", "first");
 
   ASSERT_NO_THROW(repo.add(v1, o1));
-
-  ASSERT_NO_THROW(o1.put(v1, "first"));
+  ASSERT_NO_THROW(repo.set(v1, o1));
 
   ASSERT_EQ(0, repo.commit(v1));
 
@@ -111,10 +110,17 @@ TEST(singlecoordinator, values_between_versions)
 
   ASSERT_NE(v1, v2);
 
-  ASSERT_NO_THROW(o1.put(v2, "second"));
+  ASSERT_NO_THROW(o1.put("second"));
+  ASSERT_NO_THROW(repo.set(v2, o1));
 
-  ASSERT_EQ("first", o1.get(v1));
-  ASSERT_EQ("second", o1.get(v2));
+  ASSERT_EQ(0, repo.commit(v2));
+
+  ASSERT_FALSE(repo.get<versos::KVObject>(v2, "o1") == NULL);
+  ASSERT_FALSE(repo.get<versos::KVObject>(v1, "o1") == NULL);
+  ASSERT_FALSE(repo.get<versos::KVObject>(v1, "o1") == repo.get<versos::KVObject>(v2, "o1"));
+
+  ASSERT_EQ("first", repo.get<versos::KVObject>(v1, "o1")->get());
+  ASSERT_EQ("second", repo.get<versos::KVObject>(v2, "o1")->get());
 }
 
 int main(int argc, char **argv)

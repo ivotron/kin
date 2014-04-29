@@ -3,13 +3,12 @@
 
 #include "versos/versosexception.h"
 
+#include <set>
 #include <string>
-#include <boost/ptr_container/ptr_set.hpp>
 
 namespace versos
 {
   class Version;
-  class VersionedObject;
 
   /**
    */
@@ -79,35 +78,24 @@ namespace versos
     virtual int commit(const Version& v) throw (VersosException) = 0;
 
     /**
-     * modifies the version stored in the db so that it adds an object to it. While we have the guarantee that 
-     * the given @c Version object has been already checked for OKness, this method might fail if the remote 
-     * version being updated has been committed externally (i.e. not through an instance of this object).
+     * adds an object to a version.
      */
-    virtual void add(const Version& v, const VersionedObject& o) throw (VersosException) = 0;
+    virtual void add(const Version& v, const std::string& oid) throw (VersosException) = 0;
 
     /**
-     * modifies the version stored in the db so that metadata of all objects of the given version are added to 
-     * it. While we have the guarantee that the given @c Version object has been already checked for OKness, 
-     * this method might fail if the remote version being updated has been committed externally (i.e. not 
-     * through an instance of this object).
+     * adds a set of objects to the given version.
      */
-    virtual void add(const Version& v, const boost::ptr_set<VersionedObject>& o) throw (VersosException) = 0;
+    virtual void add(const Version& v, const std::set<std::string>& oid) throw (VersosException) = 0;
 
     /**
-     * modifies the version stored in the db so that metadata of all objects of the given version are added to 
-     * it. While we have the guarantee that the given @c Version object has been already checked for OKness, 
-     * this method might fail if the remote version being updated has been committed externally (i.e. not 
-     * through an instance of this object).
+     * removes an object from the given version.
      */
-    virtual void remove(const Version& v, const boost::ptr_set<VersionedObject>& o) throw (VersosException) = 0;
+    virtual void remove(const Version& v, const std::string& oid) throw (VersosException) = 0;
 
     /**
-     * modifies the version stored in the db so that it removes an object from it. While we have the guarantee 
-     * that the given @c Version object has been already checked for OKness, this method might fail if the 
-     * remote version being updated has been committed externally (i.e. not through an instance of this 
-     * object).
+     * removes a set of objects from the given version.
      */
-    virtual void remove(const Version& v, const VersionedObject& o) throw (VersosException) = 0;
+    virtual void remove(const Version& v, const std::set<std::string>& oid) throw (VersosException) = 0;
 
     /**
      * for versions created with ::SHARED_LOCK, returns the number of locks placed on it.

@@ -7,7 +7,7 @@ TEST(repository_test, test_default_options)
   versos::Options o;
 
   ASSERT_EQ(versos::Options::Coordinator::SINGLE_CLIENT, o.coordinator_type);
-  ASSERT_EQ(versos::Options::MetaDB::MEM, o.metadb_type);
+  ASSERT_EQ(versos::Options::Backend::MEM, o.metadb_type);
   ASSERT_EQ("", o.hash_seed);
   ASSERT_TRUE(!o.metadb_initialize_if_empty);
   ASSERT_EQ(versos::Options::ClientSync::AT_EACH_COMMIT, o.sync_mode);
@@ -16,7 +16,7 @@ TEST(repository_test, test_default_options)
 
   ASSERT_NO_THROW(versos::Repository repo("mydataset", o));
 
-  o.metadb_type = versos::Options::MetaDB::MEM;
+  o.metadb_type = versos::Options::Backend::MEM;
   o.coordinator_type = versos::Options::Coordinator::SINGLE_CLIENT;
 
   ASSERT_NO_THROW(versos::Repository repo("mydataset", o));

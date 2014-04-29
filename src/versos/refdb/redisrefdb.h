@@ -29,10 +29,10 @@ namespace versos
     void makeHEAD(const Version& v) throw (VersosException);
     int commit(const Version& v) throw (VersosException);
     int getLockCount(const Version& v, const std::string& lockKey) throw (VersosException);
-    void add(const Version& v, const boost::ptr_set<VersionedObject>& o) throw (VersosException);
-    void add(const Version& v, const VersionedObject& o) throw (VersosException);
-    void remove(const Version& v, const VersionedObject& o) throw (VersosException);
-    void remove(const Version& v, const boost::ptr_set<VersionedObject>& o) throw (VersosException);
+    void add(const Version& v, const boost::ptr_set<Object>& o) throw (VersosException);
+    void add(const Version& v, const Object& o) throw (VersosException);
+    void remove(const Version& v, const Object& o) throw (VersosException);
+    void remove(const Version& v, const boost::ptr_set<Object>& o) throw (VersosException);
   protected:
     void insert(Version& v, LockType lock, const std::string& lockKey) throw (VersosException);
     Version& get(const std::string& id) throw (VersosException);

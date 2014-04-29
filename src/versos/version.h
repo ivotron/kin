@@ -11,11 +11,8 @@
 #include <stdint.h>
 #include <set>
 
-#include <boost/ptr_container/ptr_set.hpp>
-
 namespace versos
 {
-  class VersionedObject;
   class SingleClientCoordinator;
   class MpiCoordinator;
   class BackendCoordinator;
@@ -41,16 +38,15 @@ namespace versos
     const std::string id;
     const std::string parentId;
     Status status;
-    boost::ptr_set<VersionedObject> parentObjects;
-    boost::ptr_set<VersionedObject> addedObjects;
-    boost::ptr_set<VersionedObject> removedObjects;
+    std::set<std::string> parentObjects;
+    std::set<std::string> addedObjects;
+    std::set<std::string> removedObjects;
 
   public:
     Version(const Version& copy);
     Version(const std::string& id, const Version& parent);
     Version(
-        const std::string& id, const std::string parentId, const boost::ptr_set<VersionedObject>& 
-        parentObjects);
+        const std::string& id, const std::string parentId, const std::set<std::string>& parentObjects);
     ~Version();
 
     Status getStatus() const;
@@ -75,27 +71,27 @@ namespace versos
      * returns a copy of the set of objects that are part of this version. This is equivalent to doing @code 
      * getParentObjects() - getRemoved() + getAdded() @endcode
      */
-    boost::ptr_set<VersionedObject> getObjects() const;
+    std::set<std::string> getObjects() const;
 
     /**
      * Objects that came from parent's version.
      */
-    const boost::ptr_set<VersionedObject>& getParents() const;
+    const std::set<std::string>& getParents() const;
 
     /**
      * elements that have been added to this version w.r.t. the parent's objects.
      */
-    const boost::ptr_set<VersionedObject>& getAdded() const;
+    const std::set<std::string>& getAdded() const;
 
     /**
      * elements that have been removed to this version w.r.t. the parent's objects.
      */
-    const boost::ptr_set<VersionedObject>& getRemoved() const;
+    const std::set<std::string>& getRemoved() const;
 
     /**
      * whether the given object is part of this version
      */
-    bool contains(const VersionedObject& o) const;
+    bool contains(const std::string& oid) const;
 
     /**
      * returns @c true if the version is not an instance of @c Version::NOT_FOUND
@@ -105,28 +101,28 @@ namespace versos
     bool operator== (const Version& other) const;
     bool operator!= (const Version& other) const;
 
-    std::ostream& dump(std::ostream& o) const;
+    std::ostream& dump(std::ostream& oid) const;
 
   protected:
     /**
      * Adds an object to this version.
      */
-    void add(const VersionedObject& o) throw (VersosException);
+    void add(const std::string& oid) throw (VersosException);
 
     /**
      * Adds a set of objects to this version.
      */
-    void add(const boost::ptr_set<VersionedObject>& o) throw (VersosException);
+    void add(const std::set<std::string>& oid) throw (VersosException);
 
     /**
      * removes an object.
      */
-    void remove(const VersionedObject& o) throw (VersosException);
+    void remove(const std::string& oid) throw (VersosException);
 
     /**
      * Removes a set of objects to this version.
      */
-    void remove(const boost::ptr_set<VersionedObject>& o) throw (VersosException);
+    void remove(const std::set<std::string>& oid) throw (VersosException);
 
     /**
      * modifies the status of the version.

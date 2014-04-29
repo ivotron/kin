@@ -7,8 +7,7 @@
 -I/usr/include/hiredis/
 -I/usr/include/openssl
 -I/usr/include/mpi/
--DENABLE_MPI_COORDINATOR
--DENABLE_REDIS_METADB
 -Wall
 -W
 -O
+-std=c++11

@@ -1,13 +1,13 @@
 #include "versos/coordination/backendcoordinator.h"
 
 #include "versos/version.h"
-#include "versos/objectversioning/versionedobject.h"
+#include "versos/objdb/objdb.h"
 #include "versos/refdb/refdb.h"
 
 namespace versos
 {
-  BackendCoordinator::BackendCoordinator(RefDB& refdb, const Options& o) :
-    SingleClientCoordinator(refdb, o)
+  BackendCoordinator::BackendCoordinator(RefDB& refdb, ObjDB& objdb, const Options& o) :
+    SingleClientCoordinator(refdb, objdb, o)
   {
   }
 
@@ -28,14 +28,11 @@ namespace versos
 
   int BackendCoordinator::commit(Version& v) throw (VersosException)
   {
-    if (!v.isOK())
-      return -4;
-
-    boost::ptr_set<VersionedObject> objects = v.getObjects();
-    boost::ptr_set<VersionedObject>::iterator o;
+    std::set<std::string> objects = v.getObjects();
+    std::set<std::string>::iterator o;
 
     for (o = objects.begin(); o != objects.end(); ++o)
-      o->commit(v);
+      objdb.commit(v, *o);
 
     if (syncMode == Options::ClientSync::AT_EACH_COMMIT)
       refdb.add(v, v.getObjects());

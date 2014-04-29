@@ -1,7 +1,6 @@
 #include "versos/version.h"
 
 #include "versos/coordination/coordinator.h"
-#include "versos/objectversioning/versionedobject.h"
 
 namespace versos
 {
@@ -31,7 +30,7 @@ namespace versos
   }
 
   Version::Version(
-      const std::string& id, std::string parentId, const boost::ptr_set<VersionedObject>& objects) :
+      const std::string& id, std::string parentId, const std::set<std::string>& objects) :
     id(id), parentId(parentId), status(COMMITTED), addedObjects(objects)
   {
   }
@@ -40,7 +39,7 @@ namespace versos
   {
   }
 
-  void Version::add(const boost::ptr_set<VersionedObject>& o) throw (VersosException)
+  void Version::add(const std::set<std::string>& o) throw (VersosException)
   {
     if (!isOK())
       throw VersosException("can't add to version with NONE status");
@@ -48,13 +47,13 @@ namespace versos
     if (isCommitted())
       throw VersosException("version " + getId() + " already committed");
 
-    boost::ptr_set<VersionedObject>::iterator it;
+    std::set<std::string>::iterator it;
 
     for (it = o.begin(); it != o.end(); ++it)
       add(*it);
   }
 
-  void Version::remove(const boost::ptr_set<VersionedObject>& o) throw (VersosException)
+  void Version::remove(const std::set<std::string>& o) throw (VersosException)
   {
     if (!isOK())
       throw VersosException("can't add to version with NONE status");
@@ -62,13 +61,13 @@ namespace versos
     if (isCommitted())
       throw VersosException("version " + getId() + " already committed");
 
-    boost::ptr_set<VersionedObject>::iterator it;
+    std::set<std::string>::iterator it;
 
     for (it = o.begin(); it != o.end(); ++it)
       remove(*it);
   }
 
-  void Version::add(const VersionedObject& o) throw (VersosException)
+  void Version::add(const std::string& o) throw (VersosException)
   {
     if (!isOK())
       throw VersosException("can't add to version with NONE status");
@@ -77,15 +76,15 @@ namespace versos
       throw VersosException("version " + getId() + " already committed");
 
     if (contains(o))
-      throw VersosException("version " + getId() + " already contains object " +  o.getId(*this));
+      throw VersosException("version " + getId() + " already contains object " +  o);
 
-    addedObjects.insert(o.clone());
+    addedObjects.insert(o);
   }
 
-  void Version::remove(const VersionedObject& o) throw (VersosException)
+  void Version::remove(const std::string& o) throw (VersosException)
   {
     if (!isOK())
-      throw VersosException("can't add to version with NONE status");
+      throw VersosException("can't remove from version with NONE status");
 
     if (isCommitted())
       throw VersosException("version " + getId() + " already committed");
@@ -93,9 +92,9 @@ namespace versos
     // TODO: check if user has written to the object, in which case we should fail (or not, based on a knob)
 
     if (!contains(o))
-      throw VersosException("version " + getId() + " doesn't contain object " +  o.getId(*this));
+      throw VersosException("version " + getId() + " doesn't contain object " +  o);
 
-    removedObjects.insert(o.clone());
+    removedObjects.insert(o);
   }
 
   bool Version::isOK() const
@@ -118,7 +117,7 @@ namespace versos
     return status == COMMITTED;
   }
 
-  bool Version::contains(const VersionedObject& o) const
+  bool Version::contains(const std::string& o) const
   {
     if (addedObjects.find(o) != addedObjects.end())
       return true;
@@ -145,17 +144,17 @@ namespace versos
     return parentObjects.size() + addedObjects.size() - removedObjects.size();
   }
 
-  const boost::ptr_set<VersionedObject>& Version::getParents() const
+  const std::set<std::string>& Version::getParents() const
   {
     return parentObjects;
   }
 
-  const boost::ptr_set<VersionedObject>& Version::getAdded() const
+  const std::set<std::string>& Version::getAdded() const
   {
     return addedObjects;
   }
 
-  const boost::ptr_set<VersionedObject>& Version::getRemoved() const
+  const std::set<std::string>& Version::getRemoved() const
   {
     return removedObjects;
   }
@@ -166,13 +165,13 @@ namespace versos
    * since the same objects are being resent every time. We can add a Version::flatten() method (similar to 
    * what getObjects() does) that consolidates the objects in an internal workingSet container
    */
-  boost::ptr_set<VersionedObject> Version::getObjects() const
+  std::set<std::string> Version::getObjects() const
   {
-    boost::ptr_set<VersionedObject> objects = parentObjects;
+    std::set<std::string> objects = parentObjects;
 
-    objects.insert(addedObjects);
+    objects.insert(addedObjects.begin(), addedObjects.end());
 
-    boost::ptr_set<VersionedObject>::iterator it;
+    std::set<std::string>::iterator it;
 
     for (it = removedObjects.begin(); it != removedObjects.end(); ++it)
       objects.erase(*it);

@@ -13,7 +13,7 @@ TEST(memrefdb_test, fail_if_not_initialized)
 {
   versos::Options o;
 
-  o.metadb_type = versos::Options::MetaDB::MEM;
+  o.metadb_type = versos::Options::Backend::MEM;
   o.coordinator_type = versos::Options::Coordinator::SINGLE_CLIENT;
 
   ASSERT_NO_THROW(versos::Repository repo("mydataset", o));

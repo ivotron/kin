@@ -28,22 +28,32 @@ namespace versos
     /**
      * supported types of metadata databases.
      */
-    struct MetaDB {
+    struct Backend {
       enum Type {
         MEM,
         RADOS,
         REDIS
       };
     };
+
+    /**
+     * type of object database to use. Default: metadb::MEM
+     */
+    Backend::Type objdb_type;
     /**
      * type of metadata database to use. Default: metadb::MEM
      */
-    MetaDB::Type metadb_type;
+    Backend::Type metadb_type;
 
     /**
      * address of the metadb server, for remote-based implementations. Default: ""
      */
     std::string metadb_server_address;
+
+    /**
+     * address of the objdb server, for remote-based implementations. Default: ""
+     */
+    std::string objdb_server_address;
 
     /**
      * whether to initialize the metadb if empty. Default: false.
@@ -102,9 +112,12 @@ namespace versos
       coordinator_type = Coordinator::SINGLE_CLIENT;
       sync_mode = ClientSync::AT_EACH_COMMIT;
 
-      metadb_type = MetaDB::MEM;
+      metadb_type = Backend::MEM;
       metadb_server_address = "";
       metadb_initialize_if_empty = false;
+
+      objdb_type = Backend::MEM;
+      objdb_server_address = "";
 
       hash_seed = "";
 

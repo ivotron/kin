@@ -1,7 +1,6 @@
 #include "versos/refdb/memrefdb.h"
 
 #include "versos/version.h"
-#include "versos/objectversioning/versionedobject.h"
 
 namespace versos
 {
@@ -63,17 +62,17 @@ namespace versos
     return *(found->second);
   }
 
-  void MemRefDB::add(const Version&, const boost::ptr_set<VersionedObject>&) throw (VersosException)
+  void MemRefDB::add(const Version&, const std::set<std::string>&) throw (VersosException)
   {
   }
-  void MemRefDB::remove(const Version&, const boost::ptr_set<VersionedObject>&) throw (VersosException)
+  void MemRefDB::remove(const Version&, const std::set<std::string>&) throw (VersosException)
   {
   }
-  void MemRefDB::add(const Version&, const VersionedObject&) throw (VersosException)
+  void MemRefDB::add(const Version&, const std::string&) throw (VersosException)
   {
   }
 
-  void MemRefDB::remove(const Version&, const VersionedObject&) throw (VersosException)
+  void MemRefDB::remove(const Version&, const std::string&) throw (VersosException)
   {
   }
 

@@ -152,6 +152,10 @@ namespace versos
     return 0;
   }
 
+  void RadosObjDB::load(const Version& v, const std::string& id, Object* o) throw (VersosException)
+  {
+  }
+
   VersionedObject* RadosVersionedObject::do_clone() const
   {
     return new RadosVersionedObject(ioctx, repoName, baseName);

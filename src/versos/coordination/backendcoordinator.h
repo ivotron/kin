@@ -12,12 +12,13 @@
 namespace versos
 {
   class RefDB;
+  class ObjDB;
   class Version;
 
   class BackendCoordinator : public SingleClientCoordinator
   {
   public:
-    BackendCoordinator(RefDB& refdb, const Options& o);
+    BackendCoordinator(RefDB& refdb, ObjDB& objdb, const Options& o);
     ~BackendCoordinator();
 
     // inherited

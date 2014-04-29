@@ -43,6 +43,18 @@ IF (ENABLE_REDIS_METADB)
   ADD_DEFINITIONS(-DENABLE_REDIS_METADB)
 ENDIF()
 
+## Turn C++11 on (taken from: http://www.guyrutenberg.com/2014/01/05/enabling-c11-c0x-in-cmake/ )
+#include(CheckCXXCompilerFlag)
+#CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+#CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+#if(COMPILER_SUPPORTS_CXX11)
+#set(CMAKE_SOURCE_DIRCXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+#elseif(COMPILER_SUPPORTS_CXX0X)
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+#else()
+  #message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+#endif()
+
 ###############
 # Source
 ###############
@@ -52,18 +64,19 @@ ENDIF()
 SET(VERSOS_SRC
   "src/versos/version.cpp"
   "src/versos/repository.cpp"
+  "src/versos/obj/object.cpp"
+  "src/versos/obj/kvobject.cpp"
+  "src/versos/objdb/memobjdb.cpp"
   "src/versos/refdb/refdb.cpp"
   "src/versos/refdb/memrefdb.cpp"
   "src/versos/coordination/singleclientcoordinator.cpp"
-  "src/versos/coordination/backendcoordinator.cpp"
-  "src/versos/objectversioning/versionedobject.cpp"
-  "src/versos/objectversioning/memversionedobject.cpp")
+  "src/versos/coordination/backendcoordinator.cpp")
 
 # Optional
 
-IF (ENABLE_RADOS_OBJECT)
+IF (ENABLE_RADOS_OBJDB)
   SET(VERSOS_SRC ${VERSOS_SRC}
-    "src/versos/objectversioning/radosversionedobject.cpp")
+    "src/versos/objdb/radosobjdb.cpp")
 ENDIF()
 
 IF (ENABLE_MPI_COORDINATOR)

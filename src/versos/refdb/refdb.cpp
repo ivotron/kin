@@ -1,7 +1,6 @@
 #include "versos/refdb/refdb.h"
 
 #include "versos/version.h"
-#include "versos/objectversioning/versionedobject.h"
 
 #include <sstream>
 #include <iomanip>

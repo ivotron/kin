@@ -10,6 +10,9 @@
   #include "versos/coordination/mpicoordinator.h"
 #endif
 
+// object backends
+#include "versos/objdb/memobjdb.h"
+
 // metadata backends
 #include "versos/refdb/memrefdb.h"
 
@@ -21,7 +24,7 @@ namespace versos
 {
   Repository::Repository(const std::string& name, const Options& o) : name(name)
   {
-    if (o.metadb_type == Options::MetaDB::MEM)
+    if (o.metadb_type == Options::Backend::MEM)
       refdb = new MemRefDB(name);
 #ifdef ENABLE_REDIS_METADB
     else if (o.metadb_type == Options::MetaDB::REDIS)
@@ -30,13 +33,22 @@ namespace versos
     else
       throw VersosException("unknown metadb class");
 
+    if (o.objdb_type == Options::Backend::MEM)
+      objdb = new MemObjDB(name, o);
+#ifdef ENABLE_REDIS_OBJDB
+    else if (o.metadb_type == Options::ObjDB::REDIS)
+      objdb = new RedisObjDB(name, o);
+#endif
+    else
+      throw VersosException("unknown metadb class");
+
     if (o.coordinator_type == Options::Coordinator::SINGLE_CLIENT)
-      coordinator = new SingleClientCoordinator(*refdb, o);
+      coordinator = new SingleClientCoordinator(*refdb, *objdb, o);
     else if (o.coordinator_type == Options::Coordinator::BACKEND)
-      coordinator = new BackendCoordinator(*refdb, o);
+      coordinator = new BackendCoordinator(*refdb, *objdb, o);
 #ifdef ENABLE_MPI_COORDINATOR
     else if (o.coordinator_type == Options::Coordinator::MPI)
-      coordinator = new MpiCoordinator(*refdb, o);
+      coordinator = new MpiCoordinator(*refdb, *objdb, o);
 #endif
     else
       throw VersosException("unknown coordinator class");
@@ -72,12 +84,12 @@ namespace versos
     return checkout(coordinator->getHeadId());
   }
 
-  void Repository::add(Version& v, VersionedObject& o) throw (VersosException)
+  void Repository::add(Version& v, Object& o) throw (VersosException)
   {
     coordinator->add(v, o);
   }
 
-  void Repository::remove(Version& v, VersionedObject& o) throw (VersosException)
+  void Repository::remove(Version& v, Object& o) throw (VersosException)
   {
     coordinator->remove(v, o);
   }
@@ -90,6 +102,11 @@ namespace versos
       coordinator->makeHEAD(v);
 
     return lockCount;
+  }
+
+  void Repository::set(const Version& v, const Object& o) throw (VersosException)
+  {
+    objdb->set(v, o);
   }
 
   bool Repository::isEmpty() const
