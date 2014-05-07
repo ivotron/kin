@@ -29,4 +29,13 @@ std::string KVObject::get() throw (VersosException)
   return value;
 }
 
+const std::list<std::pair<int, int> > KVObject::getModifiedOffsets() const throw (VersosException)
+{
+  throw VersosException("KV objects have only one offset associated to them");
+}
+
+const char* KVObject::serialize() const throw (VersosException)
+{
+  return value.c_str();
+}
 }

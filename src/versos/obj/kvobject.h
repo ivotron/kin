@@ -19,6 +19,8 @@ public:
   virtual ~KVObject();
   void put(const std::string& value) throw (VersosException);
   std::string get() throw (VersosException);
+  const std::list<std::pair<int, int> > getModifiedOffsets() const throw (VersosException);
+  const char* serialize() const throw (VersosException);
 };
 
 }
