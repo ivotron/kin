@@ -41,11 +41,6 @@ namespace versos
     if (found == objects.end())
       throw VersosException("Object " + oid + " for version " + v.getId() + " not in DB");
 
-    if (i != typeid(*found->second))
-      throw VersosException(
-          "Object " + oid + " for version " + v.getId() + " expected type: " + i.name() +
-          " but got " + typeid(*found->second).name());
-
     o = found->second;
   }
 }

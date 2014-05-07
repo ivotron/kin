@@ -6,6 +6,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <vector>
 
 // NOTE: this has to include the actual archives that are to be used ANYWHERE in the library, otherwise a 
 // runtime exception is thrown by boost. So if a coordinator uses a binary archive, it has to be included 
@@ -56,6 +57,9 @@ namespace versos
     std::string getId() const throw (VersosException);
 
     Object* clone() const;
+
+    virtual const std::list<std::pair<int, int> > getModifiedOffsets() const throw (VersosException) = 0;
+    virtual const char* serialize() const throw (VersosException) = 0;
 
   protected:
     Object();
