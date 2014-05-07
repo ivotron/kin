@@ -12,11 +12,13 @@
 
 // object backends
 #include "versos/objdb/memobjdb.h"
+#ifdef ENABLE_REDIS_BACKEND
+  #include "versos/objdb/redisobjdb.h"
+#endif
 
 // metadata backends
 #include "versos/refdb/memrefdb.h"
-
-#ifdef ENABLE_REDIS_METADB
+#ifdef ENABLE_REDIS_BACKEND
   #include "versos/refdb/redisrefdb.h"
 #endif
 
@@ -26,8 +28,8 @@ namespace versos
   {
     if (o.metadb_type == Options::Backend::MEM)
       refdb = new MemRefDB(name);
-#ifdef ENABLE_REDIS_METADB
-    else if (o.metadb_type == Options::MetaDB::REDIS)
+#ifdef ENABLE_REDIS_BACKEND
+    else if (o.metadb_type == Options::Backend::REDIS)
       refdb = new RedisRefDB(name, o);
 #endif
     else
@@ -35,8 +37,8 @@ namespace versos
 
     if (o.objdb_type == Options::Backend::MEM)
       objdb = new MemObjDB(name, o);
-#ifdef ENABLE_REDIS_OBJDB
-    else if (o.metadb_type == Options::ObjDB::REDIS)
+#ifdef ENABLE_REDIS_BACKEND
+    else if (o.metadb_type == Options::Backend::REDIS)
       objdb = new RedisObjDB(name, o);
 #endif
     else
