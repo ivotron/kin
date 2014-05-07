@@ -16,6 +16,8 @@ INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIRS})
 FIND_PACKAGE (OpenSSL REQUIRED)
 INCLUDE_DIRECTORIES (${OPENSSL_INCLUDE_DIR})
 
+SET (VERSOS_DEP_LIBRARIES ${OPENSSL_LIBRARIES} ${Boost_SERIALIZATION_LIBRARY})
+
 # Optional
 
 SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
@@ -27,33 +29,23 @@ IF (ENABLE_MPI_COORDINATOR)
   FIND_PACKAGE (Boost 1.46 COMPONENTS mpi REQUIRED)
   INCLUDE_DIRECTORIES (${Boost_INCLUDE_DIRS})
   ADD_DEFINITIONS(-DENABLE_MPI_COORDINATOR)
+  SET(VERSOS_DEP_LIBRARIES ${VERSOS_DEP_LIBRARIES} ${MPI_LIBRARIES} ${Boost_MPI_LIBRARY})
 ENDIF()
 
-## Ceph
-IF (ENABLE_RADOS_OBJECT)
+## Rados
+IF (ENABLE_RADOS_BACKEND)
   FIND_PACKAGE (RADOS REQUIRED)
   INCLUDE_DIRECTORIES (${RADOS_INCLUDE_DIRS})
-  ADD_DEFINITIONS(-DENABLE_RADOS_OBJECT)
+  ADD_DEFINITIONS(-DENABLE_RADOS_BACKEND)
 ENDIF()
 
-## HiRedis
-IF (ENABLE_REDIS_METADB)
+## Redis
+IF (ENABLE_REDIS_BACKEND)
   FIND_PACKAGE (HiRedis REQUIRED)
   INCLUDE_DIRECTORIES (${LIBHIREDIS_INCLUDE_DIRS})
-  ADD_DEFINITIONS(-DENABLE_REDIS_METADB)
+  ADD_DEFINITIONS(-DENABLE_REDIS_BACKEND)
+  SET(VERSOS_DEP_LIBRARIES ${VERSOS_DEP_LIBRARIES} ${LIBHIREDIS_LIBRARIES})
 ENDIF()
-
-## Turn C++11 on (taken from: http://www.guyrutenberg.com/2014/01/05/enabling-c11-c0x-in-cmake/ )
-#include(CheckCXXCompilerFlag)
-#CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-#CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-#if(COMPILER_SUPPORTS_CXX11)
-#set(CMAKE_SOURCE_DIRCXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-#elseif(COMPILER_SUPPORTS_CXX0X)
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-#else()
-  #message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
-#endif()
 
 ###############
 # Source
@@ -74,24 +66,35 @@ SET(VERSOS_SRC
 
 # Optional
 
-IF (ENABLE_RADOS_OBJDB)
-  SET(VERSOS_SRC ${VERSOS_SRC}
-    "src/versos/objdb/radosobjdb.cpp")
-ENDIF()
-
 IF (ENABLE_MPI_COORDINATOR)
   SET(VERSOS_SRC ${VERSOS_SRC}
     "src/versos/coordination/mpicoordinator.cpp")
 ENDIF()
 
-IF (ENABLE_REDIS_METADB)
+IF (ENABLE_RADOS_BACKEND)
   SET(VERSOS_SRC ${VERSOS_SRC}
-    "src/versos/refdb/rediswrapper.cpp"
+    "src/versos/objdb/radosobjdb.cpp")
+ENDIF()
+
+IF (ENABLE_REDIS_BACKEND)
+  SET(VERSOS_SRC ${VERSOS_SRC}
+    "src/versos/util/rediswrapper.cpp"
+    "src/versos/objdb/redisobjdb.cpp"
     "src/versos/refdb/redisrefdb.cpp")
 ENDIF()
 
 INCLUDE_DIRECTORIES ("src/")
 ADD_LIBRARY (versos ${VERSOS_SRC})
+
+#######################
+# Tests
+#######################
+
+OPTION (BUILD_TOOLS "Build tools." OFF)
+
+IF (BUILD_TOOLS)
+  ADD_SUBDIRECTORY (src/tools)
+ENDIF()
 
 #######################
 # Tests

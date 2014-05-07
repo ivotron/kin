@@ -5,7 +5,7 @@
  *
  * with modifications/extensions
  */
-#if defined(ENABLE_REDIS_METADB) || defined(ENABLE_REDIS_OBJECT)
+#ifdef ENABLE_REDIS_BACKEND
 
 #ifndef REDISWRAPPER_H
 #define REDISWRAPPER_H

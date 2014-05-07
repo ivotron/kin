@@ -1,6 +1,6 @@
 #include "versos/repository.h"
-#include "versos/objectversioning/memversionedobject.h"
-#include "versos/refdb/rediswrapper.h"
+#include "versos/obj/kvobject.h"
+#include "versos/util/rediswrapper.h"
 
 #include <gtest/gtest.h>
 
@@ -11,7 +11,8 @@ TEST(redisrefdb_test, factory)
 
   versos::Options o;
 
-  o.metadb_type = versos::Options::MetaDB::REDIS;
+  o.metadb_server_address = "127.0.0.1";
+  o.metadb_type = versos::Options::Backend::REDIS;
 
   ASSERT_NO_THROW(versos::Repository repo("mydataset", o));
   redisdb.flushall();
@@ -33,7 +34,7 @@ TEST(redisrefdb_test, multiple_clients_no_conflict)
   // simulate multiple clients
   versos::Options o;
 
-  o.metadb_type = versos::Options::MetaDB::REDIS;
+  o.metadb_type = versos::Options::Backend::REDIS;
   o.coordinator_type = versos::Options::Coordinator::BACKEND;
   o.metadb_initialize_if_empty = true;
 
@@ -54,14 +55,14 @@ TEST(redisrefdb_test, multiple_clients_no_conflict)
 
   ASSERT_EQ(v1c1, v1c2);
 
-  versos::MemVersionedObject o1c1(repo1, "o1");
-  versos::MemVersionedObject o2c2(repo2, "o2");
+  versos::KVObject o1c1("o1", "o1valuec1");
+  versos::KVObject o2c2("o2", "o2valuec2");
 
   ASSERT_NO_THROW(repo1.add(v1c1, o1c1));
   ASSERT_NO_THROW(repo2.add(v1c2, o2c2));
 
-  ASSERT_NO_THROW(o1c1.put(v1c1, "c1first"));
-  ASSERT_NO_THROW(o2c2.put(v1c2, "c2first"));
+  ASSERT_NO_THROW(repo1.set(v1c1, o1c1));
+  ASSERT_NO_THROW(repo2.set(v1c2, o2c2));
 
   ASSERT_EQ(1, repo1.commit(v1c1));
 

@@ -2,7 +2,7 @@
 
 #include "versos/version.h"
 #include "versos/options.h"
-#include "versos/utils.h"
+#include "versos/util/stringutils.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -168,14 +168,7 @@ Version& RedisRefDB::get(const std::string& id) throw (VersosException)
   std::set<std::string> objects;
 
   for(std::list<std::string>::iterator it = objIds.begin(); it != objIds.end(); ++it)
-  {
-    std::vector<std::string> objectMeta = Utils::split(*it, '_');
-
-    if (objectMeta.size() != 3)
-      throw VersosException("Expecting 3 elements but got " + objectMeta.size());
-
-    objects.insert(new std::string(objectMeta[0], objectMeta[1], objectMeta[2]));
-  }
+    objects.insert(*it);
 
   Version checkedOutVersion(id, parentId, objects);
 
@@ -184,10 +177,8 @@ Version& RedisRefDB::get(const std::string& id) throw (VersosException)
   return MemRefDB::get(id);
 }
 
-void RedisRefDB::add(const Version& v, const std::string& o) throw (VersosException)
+void RedisRefDB::add(const Version& v, const std::string& oid) throw (VersosException)
 {
-  std::string oid = o.getId(v);
-
   int cnt;
 
   try
@@ -203,10 +194,8 @@ void RedisRefDB::add(const Version& v, const std::string& o) throw (VersosExcept
     throw VersosException("Object already in given version");
 }
 
-void RedisRefDB::remove(const Version& v, const std::string& o) throw (VersosException)
+void RedisRefDB::remove(const Version& v, const std::string& oid) throw (VersosException)
 {
-  std::string oid = o.getId(v);
-
   int cnt;
 
   try
@@ -229,7 +218,7 @@ void RedisRefDB::add(const Version& v, const std::set<std::string>& o) throw (Ve
   std::set<std::string>::iterator it;
 
   for (it = o.begin(); it != o.end(); ++it)
-    ids.push_back(it->getId(v));
+    ids.push_back(*it);
 
   unsigned long cnt;
 
@@ -253,7 +242,7 @@ void RedisRefDB::remove(const Version& v, const std::set<std::string>& o) throw 
   std::set<std::string>::iterator it;
 
   for (it = o.begin(); it != o.end(); ++it)
-    ids.push_back(it->getId(v));
+    ids.push_back(*it);
 
   unsigned long cnt;
 

@@ -3,35 +3,15 @@ CMAKE_MINIMUM_REQUIRED (VERSION 2.8.7)
 PROJECT (versos_test)
 
 #------------------------------------------------------------------------------
-# Check for dependencies, they should have been SET in parent scope
+# Check for dependencies
 #------------------------------------------------------------------------------
-
-IF (ENABLE_MPI_COORDINATOR)
-  IF (!MPI_C_FOUND)
-    MESSAGE (FATAL_ERROR "MPI required")
-  ENDIF ()
-  IF (!Boost_MPI_FOUND)
-    MESSAGE (FATAL_ERROR "Boost_MPI required")
-  ENDIF ()
-ENDIF()
-
-IF (!OPENSSL_FOUND)
-  MESSAGE (FATAL_ERROR "OpenSSL required")
-ENDIF ()
-
-IF (!Boost_SERIALIZATION_FOUND)
-  MESSAGE (FATAL_ERROR "Boost_SERIALIZATION required")
-ENDIF ()
-
-IF (ENABLE_REDIS_METADB)
-  IF (!LIBHIREDIS_FOUND)
-    MESSAGE (FATAL_ERROR "libhiredis required")
-  ENDIF ()
-ENDIF ()
 
 IF (NOT TARGET versos)
   MESSAGE (FATAL_ERROR "versos target not found")
 ENDIF ()
+
+# dependencies for libversos should have been added to VERSOS_DEP_LIBRARIES
+SET (TEST_DEP_LIBRARIES ${VERSOS_DEP_LIBRARIES} gtest gtest_main gmock gmock_main)
 
 #------------------------------------------------------------------------------
 # Add gmock/gtest libraries
@@ -44,23 +24,13 @@ INCLUDE_DIRECTORIES ("gmock/gtest/include")
 
 SET (GTEST_FLAGS "--gtest_break_on_failure")
 
-SET (DEP_LIBRARIES gtest gtest_main gmock gmock_main ${OPENSSL_LIBRARIES} ${Boost_SERIALIZATION_LIBRARY})
-
-IF (ENABLE_REDIS_METADB)
-  SET(DEP_LIBRARIES ${DEP_LIBRARIES} ${LIBHIREDIS_LIBRARIES})
-ENDIF ()
-
-IF (ENABLE_MPI_COORDINATOR)
-  SET(DEP_LIBRARIES ${DEP_LIBRARIES} ${MPI_LIBRARIES} ${Boost_MPI_LIBRARY})
-ENDIF()
-
 #------------------------------------------------------------------------------
 # Set up test macros
 #------------------------------------------------------------------------------
 
 MACRO (BUILD_TEST bin_name src_name)
   ADD_EXECUTABLE (${bin_name} ${CMAKE_CURRENT_SOURCE_DIR}/${src_name})
-  TARGET_LINK_LIBRARIES (${bin_name} versos ${DEP_LIBRARIES})
+  TARGET_LINK_LIBRARIES (${bin_name} versos ${TEST_DEP_LIBRARIES})
 ENDMACRO ()
 
 MACRO (BUILD_AND_ADD_TEST bin_name src_name)
@@ -97,7 +67,7 @@ BUILD_AND_ADD_TEST (memrefdb_test "refdb/memrefdb_test.cpp")
 BUILD_AND_ADD_TEST (singleclientcoordinator_test "coordination/singleclientcoordinator_test.cpp")
 BUILD_AND_ADD_TEST (backendcoordinator_test "coordination/backendcoordinator_test.cpp")
 
-IF (ENABLE_REDIS_METADB)
+IF (ENABLE_REDIS_BACKEND)
   BUILD_AND_ADD_TEST (redisrefdb_test "refdb/redisrefdb_test.cpp")
 ENDIF()
 

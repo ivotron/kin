@@ -9,7 +9,7 @@ TEST(repository_test, test_default_options)
   ASSERT_EQ(versos::Options::Coordinator::SINGLE_CLIENT, o.coordinator_type);
   ASSERT_EQ(versos::Options::Backend::MEM, o.metadb_type);
   ASSERT_EQ("", o.hash_seed);
-  ASSERT_TRUE(!o.metadb_initialize_if_empty);
+  ASSERT_FALSE(o.metadb_initialize_if_empty);
   ASSERT_EQ(versos::Options::ClientSync::AT_EACH_COMMIT, o.sync_mode);
   ASSERT_EQ(0, o.mpi_leader_rank);
   ASSERT_EQ(NULL, o.mpi_comm);
