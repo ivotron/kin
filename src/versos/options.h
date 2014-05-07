@@ -46,14 +46,19 @@ namespace versos
     Backend::Type metadb_type;
 
     /**
-     * address of the metadb server, for remote-based implementations. Default: ""
+     * comma-separated list of URIs. @see http://cpp-netlib.org/0.10.1/in_depth/uri.html
      */
-    std::string metadb_server_address;
+    typedef std::string uri;
 
     /**
-     * address of the objdb server, for remote-based implementations. Default: ""
+     * address of the metadb server, for remote-based implementations. Default: "".
      */
-    std::string objdb_server_address;
+    uri metadb_server_address;
+
+    /**
+     * address of the objdb server, for remote-based implementations. Default: "".
+     */
+    uri objdb_server_address;
 
     /**
      * whether to initialize the metadb if empty. Default: false.
@@ -61,7 +66,7 @@ namespace versos
     bool metadb_initialize_if_empty;
 
     /**
-     * what to use to seed the internal hashing algorithm. Default: ""
+     * what to use to seed the internal hashing algorithm. Default: "".
      */
     std::string hash_seed;
 
@@ -103,9 +108,19 @@ namespace versos
 
     /**
      * MPI communicator used by the @c MPI coordinator class. Assumes that the underlying type representing 
-     * communicators is an int. Default: -1
+     * communicators is an int. Default: NULL.
      */
     void* mpi_comm;
+
+    /**
+     * Rados pool name for the object db. Default: "data".
+     */
+    std::string rados_objdb_pool_name;
+
+    /**
+     * Rados pool name for the metadata db. Default: "data".
+     */
+    std::string rados_metadb_pool_name;
 
     Options()
     {
@@ -123,6 +138,9 @@ namespace versos
 
       mpi_leader_rank = 0;
       mpi_comm = NULL;
+
+      rados_objdb_pool_name = "data";
+      rados_metadb_pool_name = "data";
     }
   };
 }
