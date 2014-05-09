@@ -115,6 +115,7 @@ TEST(singlecoordinator, values_between_versions)
 
   ASSERT_EQ(0, repo.commit(v2));
 
+  // TODO: repo.get<T>() returns a pointer that we should free it ourselves
   ASSERT_FALSE(repo.get<versos::KVObject>(v2, "o1") == NULL);
   ASSERT_FALSE(repo.get<versos::KVObject>(v1, "o1") == NULL);
   ASSERT_FALSE(repo.get<versos::KVObject>(v1, "o1") == repo.get<versos::KVObject>(v2, "o1"));

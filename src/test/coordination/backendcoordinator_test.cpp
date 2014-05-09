@@ -1,6 +1,6 @@
 #include "versos/repository.h"
 #include "versos/obj/kvobject.h"
-#include "versos/utils.h"
+#include "versos/util/stringutils.h"
 
 #include <gtest/gtest.h>
 
@@ -139,6 +139,7 @@ TEST(backendcoordinator_test, values_between_tests)
   ASSERT_NO_THROW(repo.set(v2, o1));
   ASSERT_EQ(0, repo.commit(v2));
 
+  // TODO: repo.get<T>() returns a pointer that we should free it ourselves
   ASSERT_EQ("first", repo.get<versos::KVObject>(v1, "o1")->get());
   ASSERT_EQ("second", repo.get<versos::KVObject>(v2, "o1")->get());
 }
