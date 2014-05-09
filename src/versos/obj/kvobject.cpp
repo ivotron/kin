@@ -11,7 +11,6 @@ KVObject::~KVObject()
 
 KVObject::KVObject(const std::string& oid, const std::string& value) : Object(oid), value(value)
 {
-  boost::serialization::void_cast_register<KVObject, Object>();
 }
 
 Object* KVObject::do_clone() const
@@ -34,8 +33,8 @@ const std::list<std::pair<int, int> > KVObject::getModifiedOffsets() const throw
   throw VersosException("KV objects have only one offset associated to them");
 }
 
-const char* KVObject::serialize() const throw (VersosException)
+const std::string KVObject::serialize() const throw (VersosException)
 {
-  return value.c_str();
+  return value;
 }
 }

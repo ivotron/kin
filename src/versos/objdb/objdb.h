@@ -46,9 +46,7 @@ public:
    */
   template<class T> Object* get(const Version& v, const std::string& oid) throw (VersosException)
   {
-    Object* o;
-    get(v, oid, o, typeid(T));
-    return o;
+    return get(v, oid, typeid(T));
   }
 
   virtual void set(const Version& v, const Object& o) throw (VersosException) = 0;
@@ -58,7 +56,7 @@ protected:
   /**
    * implementation-specific.
    */
-  virtual void get(const Version& v, const std::string& oid, Object* &o, const std::type_info& i) throw 
+  virtual Object* get(const Version& v, const std::string& oid, const std::type_info& i) throw 
     (VersosException) = 0;
 };
 
