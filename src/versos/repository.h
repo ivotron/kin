@@ -3,6 +3,7 @@
 
 #include "versos/version.h"
 #include "versos/options.h"
+#include "versos/obj/object.h"
 #include "versos/objdb/objdb.h"
 #include "versos/versosexception.h"
 
@@ -97,10 +98,49 @@ namespace versos
      */
     template<class T> T* get(const Version& v, const std::string& oid) throw (VersosException)
     {
-      // should be using
+      //
+      // TODO: ease memory handling for caller by either returning a std::unique_ptr or boost::shared_ptr or 
+      // returning by value instead
+
+      // TODO: should be using
+      //
       //   dynamic_cast<T*>(objdb->get<T>(v, oid))
-      // but looks like I'm experiencing a GCC bug
-      return (T*)(objdb->get<T>(v, oid));
+      //
+      // but looks like I'm experiencing a GCC bug. So in the meantime we're type-checking ourselves
+      Object* o = objdb->get<T>(v, oid);
+
+      if (o != NULL && typeid(*o) != typeid(T))
+        throw VersosException(
+            "Object " + oid + " for version " + v.getId() + " expected type: " + typeid(*o).name() +
+            " but got " + typeid(T).name());
+
+      return (T*)(o);
+    }
+
+    /**
+     * retrieves the value of an object from the underlying db.
+     */
+    template<class T> T* exec(
+        const Version& v, const std::string& oid, const std::string& f, const std::vector<std::string>& args) 
+      throw (VersosException)
+    {
+      //
+      // TODO: ease memory handling for caller by either returning a std::unique_ptr or boost::shared_ptr or 
+      // returning by value instead
+
+      // TODO: should be using
+      //
+      //   dynamic_cast<T*>(objdb->get<T>(v, oid))
+      //
+      // but looks like I'm experiencing a GCC bug. So in the meantime we're type-checking ourselves
+      Object* o = objdb->exec<T>(v, oid, f, args);
+
+      if (o != NULL && typeid(*o) != typeid(T))
+        throw VersosException(
+            "Object " + oid + " for version " + v.getId() + " expected type: " + typeid(*o).name() +
+            " but got " + typeid(T).name());
+
+      return (T*)(o);
     }
 
     /**
