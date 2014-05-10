@@ -88,7 +88,11 @@ namespace versos
 
   void Repository::add(Version& v, Object& o) throw (VersosException)
   {
-    coordinator->add(v, o);
+    (v, o.getId());
+  }
+  void Repository::add(Version& v, const std::string& oid) throw (VersosException)
+  {
+    coordinator->add(v, oid);
   }
 
   void Repository::remove(Version& v, Object& o) throw (VersosException)
@@ -104,11 +108,6 @@ namespace versos
       coordinator->makeHEAD(v);
 
     return lockCount;
-  }
-
-  void Repository::set(const Version& v, const Object& o) throw (VersosException)
-  {
-    objdb->set(v, o);
   }
 
   bool Repository::isEmpty() const

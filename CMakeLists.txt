@@ -56,7 +56,6 @@ ENDIF()
 SET(VERSOS_SRC
   "src/versos/version.cpp"
   "src/versos/repository.cpp"
-  "src/versos/obj/object.cpp"
   "src/versos/obj/kvobject.cpp"
   "src/versos/objdb/memobjdb.cpp"
   "src/versos/refdb/refdb.cpp"

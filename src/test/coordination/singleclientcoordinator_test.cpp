@@ -99,10 +99,8 @@ TEST(singlecoordinator, values_between_versions)
   const versos::Version& head = repo.checkoutHEAD();
   versos::Version& v1 = repo.create(head);
 
-  versos::KVObject o1("o1", "first");
-
-  ASSERT_NO_THROW(repo.add(v1, o1));
-  ASSERT_NO_THROW(repo.set(v1, o1));
+  ASSERT_NO_THROW(repo.add(v1, "o1"));
+  ASSERT_NO_THROW(repo.set<std::string>(v1, "o1", "first"));
 
   ASSERT_EQ(0, repo.commit(v1));
 
@@ -110,18 +108,17 @@ TEST(singlecoordinator, values_between_versions)
 
   ASSERT_NE(v1, v2);
 
-  ASSERT_NO_THROW(o1.put("second"));
-  ASSERT_NO_THROW(repo.set(v2, o1));
+  ASSERT_NO_THROW(repo.set<std::string>(v2, "o1", "second"));
 
   ASSERT_EQ(0, repo.commit(v2));
 
-  // TODO: repo.get<T>() returns a pointer that we should free it ourselves
-  ASSERT_FALSE(repo.get<versos::KVObject>(v2, "o1") == NULL);
-  ASSERT_FALSE(repo.get<versos::KVObject>(v1, "o1") == NULL);
-  ASSERT_FALSE(repo.get<versos::KVObject>(v1, "o1") == repo.get<versos::KVObject>(v2, "o1"));
+  // TODO: repo.get<T>() returns a pointer that we should free ourselves
+  ASSERT_FALSE(repo.get<std::string>(v2, "o1") == NULL);
+  ASSERT_FALSE(repo.get<std::string>(v1, "o1") == NULL);
+  ASSERT_FALSE(repo.get<std::string>(v1, "o1") == repo.get<std::string>(v2, "o1"));
 
-  ASSERT_EQ("first", repo.get<versos::KVObject>(v1, "o1")->get());
-  ASSERT_EQ("second", repo.get<versos::KVObject>(v2, "o1")->get());
+  ASSERT_EQ("first", repo.get<std::string>(v1, "o1")->c_str());
+  ASSERT_EQ("second", repo.get<std::string>(v2, "o1")->c_str());
 }
 
 int main(int argc, char **argv)

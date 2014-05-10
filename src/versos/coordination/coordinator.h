@@ -70,6 +70,7 @@ namespace versos
      * etc..), since @c Repository should have done this check already.
      */
     virtual void add(Version& v, Object& o) throw (VersosException) = 0;
+    virtual void add(Version& v, const std::string& oid) throw (VersosException) = 0;
 
     /**
      * removes an object from a version

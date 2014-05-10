@@ -13,11 +13,6 @@ KVObject::KVObject(const std::string& oid, const std::string& value) : Object(oi
 {
 }
 
-Object* KVObject::do_clone() const
-{
-  return new KVObject(oid, value);
-}
-
 void KVObject::put(const std::string& value) throw (VersosException)
 {
   this->value = value;

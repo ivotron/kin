@@ -50,18 +50,23 @@ namespace versos
 
   void SingleClientCoordinator::add(Version& v, Object& o) throw (VersosException)
   {
+    add(v, o.getId());
+  }
+
+  void SingleClientCoordinator::add(Version& v, const std::string& oid) throw (VersosException)
+  {
     if (syncMode == Options::ClientSync::NONE)
       throw VersosException("can't add objects to a version in NONE sync_mode");
 
     if (v.isCommitted())
       throw VersosException("Can't add objects to version; already committed");
 
-    v.add(o.getId());
+    v.add(oid);
 
     if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
-      refdb.add(v, o.getId());
+      refdb.add(v, oid);
 
-    objdb.create(checkout(v.getParentId()), v, o.getId());
+    objdb.create(checkout(v.getParentId()), v, oid);
   }
 
   void SingleClientCoordinator::remove(Version& v, Object& o) throw (VersosException)

@@ -32,6 +32,7 @@ namespace versos
     const Version& checkout(const std::string& id) throw (VersosException);
     Version& create(const Version& parent) throw (VersosException);
     void add(Version& v, Object& o) throw (VersosException);
+    void add(Version& v, const std::string& o) throw (VersosException);
     void remove(Version& v, Object& o) throw (VersosException);
     int commit(Version& v) throw (VersosException);
     void makeHEAD(const Version& v) throw (VersosException);

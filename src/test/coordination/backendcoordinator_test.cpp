@@ -122,10 +122,8 @@ TEST(backendcoordinator_test, values_between_tests)
   const versos::Version& head = repo.checkoutHEAD();
   versos::Version& v1 = repo.create(head);
 
-  versos::KVObject o1("o1", "first");
-
-  ASSERT_NO_THROW(repo.add(v1, o1));
-  ASSERT_NO_THROW(repo.set(v1, o1));
+  ASSERT_NO_THROW(repo.add(v1, "o1"));
+  ASSERT_NO_THROW(repo.set<std::string>(v1, "o1", "first"));
 
   ASSERT_NO_THROW(repo.commit(v1));
 
@@ -134,19 +132,17 @@ TEST(backendcoordinator_test, values_between_tests)
   ASSERT_TRUE(v2.isOK());
   ASSERT_NE(v1, v2);
 
-  o1.put("second");
-
-  ASSERT_NO_THROW(repo.set(v2, o1));
+  ASSERT_NO_THROW(repo.set<std::string>(v2, "o1", "second"));
   ASSERT_EQ(0, repo.commit(v2));
 
   // TODO: repo.get<T>() returns a pointer that we should free it ourselves
-  ASSERT_EQ("first", repo.get<versos::KVObject>(v1, "o1")->get());
-  ASSERT_EQ("second", repo.get<versos::KVObject>(v2, "o1")->get());
+  ASSERT_EQ("first", repo.get<std::string>(v1, "o1")->c_str());
+  ASSERT_EQ("second", repo.get<std::string>(v2, "o1")->c_str());
 }
 
 TEST(backendcoordinator_test, multiple_clients_no_conflict)
 {
-  // simulate multiple clients from a single one
+  // simulate multiple clients from a single node
   versos::Options o;
 
   o.coordinator_type = versos::Options::Coordinator::BACKEND;
@@ -164,14 +160,11 @@ TEST(backendcoordinator_test, multiple_clients_no_conflict)
 
   ASSERT_EQ(v1c1, v1c2);
 
-  versos::KVObject o1c1("o1", "o1c1first");
-  versos::KVObject o2c2("o2", "o2c1first");
+  ASSERT_NO_THROW(repo.add(v1c1, "o1"));
+  ASSERT_NO_THROW(repo.add(v1c2, "o2"));
 
-  ASSERT_NO_THROW(repo.add(v1c1, o1c1));
-  ASSERT_NO_THROW(repo.add(v1c2, o2c2));
-
-  ASSERT_NO_THROW(repo.set(v1c1, o1c1));
-  ASSERT_NO_THROW(repo.set(v1c2, o2c2));
+  ASSERT_NO_THROW(repo.set<std::string>(v1c1, "o1", "from_client_c1"));
+  ASSERT_NO_THROW(repo.set<std::string>(v1c2, "o2", "from_client_c2"));
 
   ASSERT_EQ(1, repo.commit(v1c1));
 

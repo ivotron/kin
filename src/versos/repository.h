@@ -16,7 +16,6 @@ namespace versos
 {
   class Coordinator;
   class RefDB;
-  class Object;
 
   /**
    * The main interface for checking-out/creating versions.
@@ -79,6 +78,7 @@ namespace versos
      * Adds an object to the given version. Fails if version is read only.
      */
     void add(Version& v, Object& o) throw (VersosException);
+    void add(Version& v, const std::string& oid) throw (VersosException);
     // TODO: add(Version& v, set<Object> objects);
 
     /**
@@ -94,59 +94,51 @@ namespace versos
     int commit(Version& v) throw (VersosException);
 
     /**
-     * retrieves the value of an object from the underlying db.
+     * sets an object to the underlying object db.
      */
-    template<class T> T* get(const Version& v, const std::string& oid) throw (VersosException)
+    template<class T> void set(const Version& v, const std::string& oid, const T& value)
+      throw (VersosException)
     {
-      //
-      // TODO: ease memory handling for caller by either returning a std::unique_ptr or boost::shared_ptr or 
-      // returning by value instead
-
-      // TODO: should be using
-      //
-      //   dynamic_cast<T*>(objdb->get<T>(v, oid))
-      //
-      // but looks like I'm experiencing a GCC bug. So in the meantime we're type-checking ourselves
-      Object* o = objdb->get<T>(v, oid);
-
-      if (o != NULL && typeid(*o) != typeid(T))
-        throw VersosException(
-            "Object " + oid + " for version " + v.getId() + " expected type: " + typeid(*o).name() +
-            " but got " + typeid(T).name());
-
-      return (T*)(o);
+      objdb->set<T>(v, oid, value);
     }
 
     /**
      * retrieves the value of an object from the underlying db.
+     */
+    template<class T> T* get(const Version& v, const std::string& oid) throw (VersosException)
+    {
+      return objdb->get<T>(v, oid);
+    }
+
+    /**
+     * invokes a backend method for the given object.
      */
     template<class T> T* exec(
         const Version& v, const std::string& oid, const std::string& f, const std::vector<std::string>& args) 
       throw (VersosException)
     {
-      //
-      // TODO: ease memory handling for caller by either returning a std::unique_ptr or boost::shared_ptr or 
-      // returning by value instead
-
-      // TODO: should be using
-      //
-      //   dynamic_cast<T*>(objdb->get<T>(v, oid))
-      //
-      // but looks like I'm experiencing a GCC bug. So in the meantime we're type-checking ourselves
-      Object* o = objdb->exec<T>(v, oid, f, args);
-
-      if (o != NULL && typeid(*o) != typeid(T))
-        throw VersosException(
-            "Object " + oid + " for version " + v.getId() + " expected type: " + typeid(*o).name() +
-            " but got " + typeid(T).name());
-
-      return (T*)(o);
+      return objdb->exec<T>(v, oid, f, args);
     }
 
     /**
-     * sets an object to the underlying object db.
+     * convenience methods
      */
-    void set(const Version& v, const Object& o) throw (VersosException);
+    template<class T> T* exec(
+        const Version& v, const std::string& oid, const std::string& f, const std::string& arg)
+      throw (VersosException)
+    {
+      std::vector<std::string> args;
+      args.push_back(arg);
+      return objdb->exec<T>(v, oid, f, args);
+    }
+    template<class T> T* exec(
+        const Version& v, const Object& o, const std::string& f, const std::string& arg)
+      throw (VersosException)
+    {
+      std::vector<std::string> args;
+      args.push_back(arg);
+      return objdb->exec<T>(v, o.getId(), f, args);
+    }
 
     /**
      */

@@ -11,7 +11,7 @@ namespace versos
 
 /**
  * Sample implementation of an object. This is really redundant since one can obtain the value directly 
- * through ::ObjDB::exec("get"), which every backend supports.
+ * through ::ObjDB::get, which every backend supports.
  */
 class KVObject : public Object
 {

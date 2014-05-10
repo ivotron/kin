@@ -26,21 +26,33 @@ namespace versos
   {
   }
 
-  void MemObjDB::set(const Version& v, const Object& o) throw (VersosException)
+  boost::any MemObjDB::exec(
+      const Version&,
+      const std::string&,
+      const std::string&,
+      const std::vector<std::string>&,
+      const std::type_info&)
+    throw (VersosException)
   {
-    std::string key = o.getId() + "_" + v.getId();
-    objects.insert(key, o.clone());
+    throw VersosException("in memory doesn't have active capabilities");
   }
 
-  void MemObjDB::get(const Version& v, const std::string& oid, Object* &o, const std::type_info& i)
+  void MemObjDB::set(const Version& v, const std::string& oid, const void* value, const std::type_info&)
     throw (VersosException)
   {
     std::string key = oid + "_" + v.getId();
-    boost::ptr_map<std::string, Object>::iterator found = objects.find(key);
+    objects[key] = value;
+  }
+
+  boost::any MemObjDB::get(const Version& v, const std::string& oid, const std::type_info&)
+    throw (VersosException)
+  {
+    std::string key = oid + "_" + v.getId();
+    std::map<std::string, boost::any>::iterator found = objects.find(key);
 
     if (found == objects.end())
       throw VersosException("Object " + oid + " for version " + v.getId() + " not in DB");
 
-    o = found->second;
+    return found->second;
   }
 }
