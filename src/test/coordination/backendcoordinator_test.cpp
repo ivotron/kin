@@ -41,9 +41,7 @@ TEST(backendcoordinator_test, NONE_object_containment)
   ASSERT_EQ(0u, v1.size());
   ASSERT_NE(versos::Version::PARENT_FOR_ROOT.getId(), v1.getId());
 
-  versos::KVObject o1("o1", "value1");
-
-  ASSERT_ANY_THROW(repo.add(v1, o1));
+  ASSERT_ANY_THROW(repo.add(v1, "o1"));
 
   ASSERT_FALSE(v1.isCommitted());
   ASSERT_EQ(versos::Version::STAGED, v1.getStatus());
@@ -65,7 +63,7 @@ TEST(backendcoordinator_test, NONE_object_containment)
   ASSERT_EQ(0u, v2.size());
   ASSERT_FALSE(v2.contains("o1"));
 
-  ASSERT_ANY_THROW(repo.remove(v2, o1));
+  ASSERT_ANY_THROW(repo.remove(v2, "o1"));
 
   ASSERT_FALSE(v2.isCommitted());
   ASSERT_EQ(0u, v2.size());
@@ -135,9 +133,8 @@ TEST(backendcoordinator_test, values_between_tests)
   ASSERT_NO_THROW(repo.set<std::string>(v2, "o1", "second"));
   ASSERT_EQ(0, repo.commit(v2));
 
-  // TODO: repo.get<T>() returns a pointer that we should free it ourselves
-  ASSERT_EQ("first", repo.get<std::string>(v1, "o1")->c_str());
-  ASSERT_EQ("second", repo.get<std::string>(v2, "o1")->c_str());
+  ASSERT_EQ("first", repo.get<std::string>(v1, "o1"));
+  ASSERT_EQ("second", repo.get<std::string>(v2, "o1"));
 }
 
 TEST(backendcoordinator_test, multiple_clients_no_conflict)

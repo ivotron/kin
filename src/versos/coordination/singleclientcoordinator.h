@@ -34,9 +34,11 @@ namespace versos
     void add(Version& v, Object& o) throw (VersosException);
     void add(Version& v, const std::string& o) throw (VersosException);
     void remove(Version& v, Object& o) throw (VersosException);
+    void remove(Version& v, const std::string& oid) throw (VersosException);
     int commit(Version& v) throw (VersosException);
     void makeHEAD(const Version& v) throw (VersosException);
     void initRepository() throw (VersosException);
+    void openMetaDB() const throw (VersosException);
     bool isRepositoryEmpty();
     void shutdown() throw (VersosException);
 

@@ -112,13 +112,10 @@ TEST(singlecoordinator, values_between_versions)
 
   ASSERT_EQ(0, repo.commit(v2));
 
-  // TODO: repo.get<T>() returns a pointer that we should free ourselves
-  ASSERT_FALSE(repo.get<std::string>(v2, "o1") == NULL);
-  ASSERT_FALSE(repo.get<std::string>(v1, "o1") == NULL);
   ASSERT_FALSE(repo.get<std::string>(v1, "o1") == repo.get<std::string>(v2, "o1"));
 
-  ASSERT_EQ("first", repo.get<std::string>(v1, "o1")->c_str());
-  ASSERT_EQ("second", repo.get<std::string>(v2, "o1")->c_str());
+  ASSERT_EQ("first", repo.get<std::string>(v1, "o1"));
+  ASSERT_EQ("second", repo.get<std::string>(v2, "o1"));
 }
 
 int main(int argc, char **argv)

@@ -37,7 +37,7 @@ namespace versos
     throw VersosException("in memory doesn't have active capabilities");
   }
 
-  void MemObjDB::set(const Version& v, const std::string& oid, const void* value, const std::type_info&)
+  void MemObjDB::set(const Version& v, const std::string& oid, boost::any value, const std::type_info&)
     throw (VersosException)
   {
     std::string key = oid + "_" + v.getId();

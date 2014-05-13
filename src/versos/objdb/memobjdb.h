@@ -36,7 +36,7 @@ protected:
     throw (VersosException);
   boost::any get(const Version& v, const std::string& id, const std::type_info& i)
     throw (VersosException);
-  void set(const Version& v, const std::string& oid, const void* value, const std::type_info& i)
+  void set(const Version& v, const std::string& oid, boost::any value, const std::type_info& i)
     throw (VersosException);
 };
 

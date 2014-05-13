@@ -85,6 +85,7 @@ namespace versos
      * removes an object.
      */
     void remove(Version& v, Object& o) throw (VersosException);
+    void remove(Version& v, const std::string& oid) throw (VersosException);
 
     /**
      * commits a version. TODO: currently it also updates the HEAD but this will change when we add support
@@ -105,7 +106,7 @@ namespace versos
     /**
      * retrieves the value of an object from the underlying db.
      */
-    template<class T> T* get(const Version& v, const std::string& oid) throw (VersosException)
+    template<class T> T get(const Version& v, const std::string& oid) throw (VersosException)
     {
       return objdb->get<T>(v, oid);
     }
@@ -113,7 +114,7 @@ namespace versos
     /**
      * invokes a backend method for the given object.
      */
-    template<class T> T* exec(
+    template<class T> T exec(
         const Version& v, const std::string& oid, const std::string& f, const std::vector<std::string>& args) 
       throw (VersosException)
     {
@@ -123,7 +124,7 @@ namespace versos
     /**
      * convenience methods
      */
-    template<class T> T* exec(
+    template<class T> T exec(
         const Version& v, const std::string& oid, const std::string& f, const std::string& arg)
       throw (VersosException)
     {
@@ -131,7 +132,7 @@ namespace versos
       args.push_back(arg);
       return objdb->exec<T>(v, oid, f, args);
     }
-    template<class T> T* exec(
+    template<class T> T exec(
         const Version& v, const Object& o, const std::string& f, const std::string& arg)
       throw (VersosException)
     {

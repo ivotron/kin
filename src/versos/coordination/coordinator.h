@@ -40,7 +40,7 @@ namespace versos
     /**
      * open the db
      */
-    //virtual int openMetaDB() const = 0;
+    virtual void openMetaDB() const throw (VersosException) = 0;
 
     /**
      * retrieves the id of the latest committed version.
@@ -79,6 +79,7 @@ namespace versos
      * etc..), since @c Repository should have done this check already.
      */
     virtual void remove(Version& v, Object& o) throw (VersosException) = 0;
+    virtual void remove(Version& v, const std::string& oid) throw (VersosException) = 0;
 
     /**
      * initializes an empty repo. fails if non-empty.

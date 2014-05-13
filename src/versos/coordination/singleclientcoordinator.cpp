@@ -52,7 +52,6 @@ namespace versos
   {
     add(v, o.getId());
   }
-
   void SingleClientCoordinator::add(Version& v, const std::string& oid) throw (VersosException)
   {
     if (syncMode == Options::ClientSync::NONE)
@@ -71,18 +70,23 @@ namespace versos
 
   void SingleClientCoordinator::remove(Version& v, Object& o) throw (VersosException)
   {
+    remove(v, o.getId());
+  }
+
+  void SingleClientCoordinator::remove(Version& v, const std::string& oid) throw (VersosException)
+  {
     if (syncMode == Options::ClientSync::NONE)
       throw VersosException("can't remove objects from a version in NONE sync_mode");
 
     if (v.isCommitted())
       throw VersosException("Can't remove objects from version; already committed");
 
-    objdb.remove(v, o.getId());
+    objdb.remove(v, oid);
 
     if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
-      refdb.remove(v, o.getId());
+      refdb.remove(v, oid);
 
-    v.remove(o.getId());
+    v.remove(oid);
   }
 
   void SingleClientCoordinator::makeHEAD(const Version& v) throw (VersosException)
@@ -107,6 +111,11 @@ namespace versos
     v.setStatus(Version::COMMITTED);
 
     return refdb.commit(v);
+  }
+
+  void SingleClientCoordinator::openMetaDB() const throw (VersosException)
+  {
+    refdb.open();
   }
 
   void SingleClientCoordinator::initRepository() throw (VersosException)

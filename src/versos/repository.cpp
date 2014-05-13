@@ -59,7 +59,7 @@ namespace versos
       // sanity check
       throw VersosException("none");
 
-    refdb->open();
+    coordinator->openMetaDB();
 
     if (o.metadb_initialize_if_empty == true && coordinator->isRepositoryEmpty())
       coordinator->initRepository();
@@ -88,7 +88,7 @@ namespace versos
 
   void Repository::add(Version& v, Object& o) throw (VersosException)
   {
-    (v, o.getId());
+    add(v, o.getId());
   }
   void Repository::add(Version& v, const std::string& oid) throw (VersosException)
   {
@@ -97,7 +97,11 @@ namespace versos
 
   void Repository::remove(Version& v, Object& o) throw (VersosException)
   {
-    coordinator->remove(v, o);
+    remove(v, o.getId());
+  }
+  void Repository::remove(Version& v, const std::string& oid) throw (VersosException)
+  {
+    coordinator->remove(v, oid);
   }
 
   int Repository::commit(Version& v) throw (VersosException)
