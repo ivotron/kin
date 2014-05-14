@@ -12,9 +12,11 @@
 
 // object backends
 #include "versos/objdb/memobjdb.h"
+/*
 #ifdef ENABLE_REDIS_BACKEND
   #include "versos/objdb/redisobjdb.h"
 #endif
+*/
 
 // metadata backends
 #include "versos/refdb/memrefdb.h"
@@ -37,10 +39,12 @@ namespace versos
 
     if (o.objdb_type == Options::Backend::MEM)
       objdb = new MemObjDB(name, o);
+    /*
 #ifdef ENABLE_REDIS_BACKEND
     else if (o.metadb_type == Options::Backend::REDIS)
       objdb = new RedisObjDB(name, o);
 #endif
+*/
     else
       throw VersosException("unknown metadb class");
 

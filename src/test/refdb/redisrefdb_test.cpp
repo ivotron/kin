@@ -1,5 +1,4 @@
 #include "versos/repository.h"
-#include "versos/obj/kvobject.h"
 #include "versos/util/rediswrapper.h"
 
 #include <gtest/gtest.h>
@@ -55,14 +54,11 @@ TEST(redisrefdb_test, multiple_clients_no_conflict)
 
   ASSERT_EQ(v1c1, v1c2);
 
-  versos::KVObject o1c1("o1", "o1valuec1");
-  versos::KVObject o2c2("o2", "o2valuec2");
+  ASSERT_NO_THROW(repo1.add(v1c1, "o1c1"));
+  ASSERT_NO_THROW(repo2.add(v1c2, "o2c2"));
 
-  ASSERT_NO_THROW(repo1.add(v1c1, o1c1));
-  ASSERT_NO_THROW(repo2.add(v1c2, o2c2));
-
-  ASSERT_NO_THROW(repo1.set(v1c1, o1c1));
-  ASSERT_NO_THROW(repo2.set(v1c2, o2c2));
+  ASSERT_NO_THROW(repo1.set<std::string>(v1c1, "o1c1", "o1valuec1"));
+  ASSERT_NO_THROW(repo1.set<std::string>(v1c2, "o2c2", "o1valuec2"));
 
   ASSERT_EQ(1, repo1.commit(v1c1));
 
@@ -87,4 +83,3 @@ int main(int argc, char **argv)
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-

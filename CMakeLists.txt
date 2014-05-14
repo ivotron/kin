@@ -78,7 +78,6 @@ ENDIF()
 IF (ENABLE_REDIS_BACKEND)
   SET(VERSOS_SRC ${VERSOS_SRC}
     "src/versos/util/rediswrapper.cpp"
-    "src/versos/objdb/redisobjdb.cpp"
     "src/versos/refdb/redisrefdb.cpp")
 ENDIF()
 
