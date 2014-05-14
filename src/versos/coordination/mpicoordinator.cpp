@@ -1,18 +1,15 @@
 #include "versos/coordination/mpicoordinator.h"
 
+#include "versos/obj/object.h"
 #include "versos/version.h"
-#include "versos/objectversioning/versionedobject.h"
 
 #include <sstream>
 #include <stdexcept>
 #include <vector>
 
-#include <mpi.h>
-
 #include <boost/mpi/collectives.hpp>
 #include <boost/mpi/environment.hpp>
-#include <boost/ptr_container/ptr_set.hpp>
-#include <boost/ptr_container/serialize_ptr_set.hpp>
+#include <boost/serialization/set.hpp>
 
 /* high-level description of the implementation:
  *
@@ -49,8 +46,8 @@
 
 namespace versos
 {
-  MpiCoordinator::MpiCoordinator(RefDB& refdb, const Options& o) :
-    SingleClientCoordinator(refdb, o), comm(*((MPI_Comm *) o.mpi_comm), boost::mpi::comm_duplicate), 
+  MpiCoordinator::MpiCoordinator(RefDB& refdb, ObjDB& objdb, const Options& o) :
+    SingleClientCoordinator(refdb, objdb, o), comm(*((MPI_Comm *) o.mpi_comm), boost::mpi::comm_duplicate), 
     leaderRank(o.mpi_leader_rank), syncMode(o.sync_mode), localRefDB("local")
   {
     if (leaderRank < 0)
@@ -76,6 +73,12 @@ namespace versos
     return id;
   }
 
+  void MpiCoordinator::openMetaDB() const throw (VersosException)
+  {
+    if (imLeader())
+      refdb.open();
+  }
+
   void MpiCoordinator::initRepository() throw (VersosException)
   {
     if (imLeader())
@@ -93,7 +96,7 @@ namespace versos
     }
 
     std::string parentId;
-    boost::ptr_set<VersionedObject> objects;
+    std::set<std::string> objects;
 
     // ask for the version contents to leader
     {
@@ -139,30 +142,38 @@ namespace versos
     return newVersion;
   }
 
-  void MpiCoordinator::add(Version& v, VersionedObject& o) throw (VersosException)
+  void MpiCoordinator::add(Version& v, Object& o) throw (VersosException)
+  {
+    add(v, o.getId());
+  }
+  void MpiCoordinator::add(Version& v, const std::string& oid) throw (VersosException)
   {
     if (syncMode == Options::ClientSync::NONE)
       throw VersosException("can't add objects to a version in NONE sync_mode");
 
-    v.add(o);
+    v.add(oid);
 
     if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
       allGather(v);
 
-    o.create(checkout(v.getParentId()), v);
+    objdb.create(checkout(v.getParentId()), v, oid);
   }
 
-  void MpiCoordinator::remove(Version& v, VersionedObject& o) throw (VersosException)
+  void MpiCoordinator::remove(Version& v, Object& o) throw (VersosException)
+  {
+    remove(v, o.getId());
+  }
+  void MpiCoordinator::remove(Version& v, const std::string& oid) throw (VersosException)
   {
     if (syncMode == Options::ClientSync::NONE)
       throw VersosException("can't remove objects from a version in NONE sync_mode");
 
-    v.remove(o);
+    v.remove(oid);
 
     if (syncMode == Options::ClientSync::AT_EACH_ADD_OR_REMOVE)
       allGather(v);
 
-    o.remove(v);
+    objdb.remove(v, oid);
   }
 
   int MpiCoordinator::commit(Version& v) throw (VersosException)
@@ -175,8 +186,7 @@ namespace versos
       // TODO: leader doesn't know about objects in each rank, so each rank has to call o.commit(v)
       //       the problem is that we don't have the references to those objects, so the user has to do that 
       //       on his/her own. We can enforce this by checking if the object being committed (locally) has 
-      //       been committed in the objectstore (by adding some sort of ::VersionedObject::isCommited() 
-      //       method
+      //       been committed in the objectstore (by adding some sort of ::Object::isCommited() method
       SingleClientCoordinator::commit(v);
 
     v.setStatus(Version::COMMITTED);
@@ -243,25 +253,25 @@ namespace versos
     boost::mpi::broadcast(comm, id, leaderRank);
   }
 
-  void MpiCoordinator::broadcast(boost::ptr_set<VersionedObject>& objects) const
+  void MpiCoordinator::broadcast(std::set<std::string>& objects) const
   {
     boost::mpi::broadcast(comm, objects, leaderRank);
   }
 
   void MpiCoordinator::allGather(Version& v) const
   {
-    std::vector<boost::ptr_set<VersionedObject> > addedObjectsV;
-    std::vector<boost::ptr_set<VersionedObject> > removedObjectsV;
+    std::vector<std::set<std::string> > addedObjectsV;
+    std::vector<std::set<std::string> > removedObjectsV;
 
     boost::mpi::all_gather(comm, v.getAdded(), addedObjectsV);
     boost::mpi::all_gather(comm, v.getRemoved(), removedObjectsV);
 
     for (int i = 0 ; i < comm.size(); i++)
     {
-      boost::ptr_set<VersionedObject> addedObjects = addedObjectsV[i];
-      boost::ptr_set<VersionedObject> removedObjects = removedObjectsV[i];
+      std::set<std::string> addedObjects = addedObjectsV[i];
+      std::set<std::string> removedObjects = removedObjectsV[i];
 
-      boost::ptr_set<VersionedObject>::iterator it;
+      std::set<std::string>::iterator it;
 
       for (it = addedObjects.begin(); it != addedObjects.end(); ++it)
         if (!v.contains(*it))

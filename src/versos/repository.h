@@ -100,6 +100,9 @@ namespace versos
     template<class T> void set(const Version& v, const std::string& oid, const T& value)
       throw (VersosException)
     {
+      if (v.isCommitted())
+        throw VersosException("can't add to already committed version");
+
       objdb->set<T>(v, oid, value);
     }
 
