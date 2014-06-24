@@ -1,4 +1,4 @@
-package diversion
+package metadb
 
 type lockMode int
 

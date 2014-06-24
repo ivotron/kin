@@ -2,8 +2,8 @@ package diversion
 
 import "fmt"
 
-type DiversosError int
+type DiversosError string
 
 func (e DiversosError) Error() string {
-	return fmt.Sprintf("versos: ret=%d", e)
+	return fmt.Sprintf("diversion: %s", e)
 }

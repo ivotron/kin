@@ -1,4 +1,4 @@
-package diversion
+package metadb
 
 type RadosMetaDB struct {
 	PoolName string
