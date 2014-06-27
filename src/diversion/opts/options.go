@@ -1,4 +1,4 @@
-package diversion
+package opts
 
 // supported types of coordinators.
 const (

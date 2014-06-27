@@ -2,10 +2,10 @@ package coordination
 
 type Coordinator interface {
 	// commits.
-	Commit(v Version) (err error)
+	Commit(v string) (err error)
 
 	// makes the given version the head of the repo. Fails if head in the refdb is.
-	MakeHEAD(Version v) (err error)
+	MakeHEAD(v string) (err error)
 
 	// open the meta db.
 	OpenMetaDB() (err error)
@@ -20,13 +20,13 @@ type Coordinator interface {
 	Checkout(commitId string) (err error)
 
 	// creates a version based on a given one.
-	Create(parent Version) (err error)
+	Create(parent string) (err error)
 
 	// adds an object to a version.
-	Add(v Version, oid string) (err error)
+	Add(v string, oid string) (err error)
 
 	// removes an object from a version
-	Remove(v Version, oid string) (err error)
+	Remove(v string, oid string) (err error)
 
 	// initializes an empty repo. fails if non-empty.
 	InitRepository() (err error)
