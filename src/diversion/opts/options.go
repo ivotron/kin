@@ -46,6 +46,10 @@ const (
 type uri string
 
 type Options struct {
+	// name of repository
+	RepositoryName string
+
+	// type of coordinator
 	CoordinatorType int
 
 	// type of object database to use. Default: Memory

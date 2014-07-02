@@ -1,21 +1,16 @@
 # repository
 
+  - write factory unit tests
+
 # version
 
-  - create unit test
-
-# syncModes
-
-  - remove "EACH" from names
+  - think if we needed now that we've moved to go
 
 # coordinators
 
 ## all
 
   - coordinators aren't fault-tolerant (what if a client dies?)
-  - for AT_EACH_ADD_OR_REMOVE, instead of sending the whole list of 
-    objects that each client is working on, we can optimize this by 
-    "flattening" a version's internal state.
   - add unit tests for conflicting scenarios (more than one client 
     working on the same object)
 

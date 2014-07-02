@@ -1,6 +1,9 @@
 package metadb
 
-import "diversion/opts"
+import (
+	"diversion/opts"
+	"diversion/version"
+)
 
 type MemMetaDB struct {
 }
@@ -9,10 +12,10 @@ func NewMemMetaDB(o opts.Options) (db *MemMetaDB, err error) {
 	return &MemMetaDB{}, nil
 }
 
-func (db MemMetaDB) Create(p string, seed string, m lockMode, key string) (v string, err error) {
+func (db MemMetaDB) Clone(p string, seed string, m lockMode, key string) (v string, err error) {
 	return
 }
-func (db MemMetaDB) Checkout(id string) (version string, err error) {
+func (db MemMetaDB) Checkout(id string) (version version.Version, err error) {
 	return
 }
 func (db MemMetaDB) Init() (err error) {
@@ -24,10 +27,23 @@ func (db MemMetaDB) Open() (err error) {
 func (db MemMetaDB) Close() (err error) {
 	return
 }
-func (db MemMetaDB) IsEmpty() {
+func (db MemMetaDB) IsEmpty() (bool, error) {
+	return true, nil
+}
+func (db MemMetaDB) MakeHead(v string) (err error) {
+	// // this has to be atomic
+	// // {
+	// if id:= GetHeadId() != v.Parent() {
+	//   // someone committed before us, return the id so client can do conflict detection
+	//   return GetHeadId()
+	// } else {
+	//   MakeHead(v.Id)
+	//   return v.Id()
+	// }
+	// // }
 	return
 }
-func (db MemMetaDB) MakeHEAD(v string) (err error) {
+func (db MemMetaDB) GetHeadId() (vid string, err error) {
 	return
 }
 func (db MemMetaDB) Commit(v string) (err error) {

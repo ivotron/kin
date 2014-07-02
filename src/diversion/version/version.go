@@ -1,4 +1,4 @@
-package diversion
+package version
 
 import (
 	"container/list"
@@ -14,6 +14,7 @@ const (
 
 type Version struct {
 	Status  status
-	ID      string
+	Parent  string
+	Id      string
 	Objects list.List
 }
