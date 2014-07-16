@@ -1,7 +1,6 @@
 package kin
 
 import (
-	"fmt"
 	"kin/coordination"
 	"kin/metadb"
 	"kin/opts"
@@ -46,11 +45,11 @@ func NewRepository(conf opts.Options) (repo Repository, err error) {
 		}
 
 	default:
-		return nil, KinError{fmt.Sprintf("unknown metadata db type %d", conf.MetaDbType)}
+		return nil, KinError{"unknown metadata db type " + string(conf.MetaDbType)}
 
 	}
 
-	switch conf.CoordinatorType {
+	switch conf.Coordinator {
 
 	case opts.SingleClient:
 		if repo, err := coordination.NewSingleClientCoordinator(conf, db); err != nil {
@@ -60,6 +59,6 @@ func NewRepository(conf opts.Options) (repo Repository, err error) {
 		}
 
 	default:
-		return nil, KinError{fmt.Sprintf("unknown coordination type %d", conf.CoordinatorType)}
+		return nil, KinError{"unknown coordination type " + string(conf.Coordinator)}
 	}
 }

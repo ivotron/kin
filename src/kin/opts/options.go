@@ -1,16 +1,26 @@
 package opts
 
-// supported types of coordinators.
-const (
-	SingleClient = 0
-	Mpi
-	Backend
-)
+type CoordinatorType string
 
 const (
-	Memory = 0
-	Rados
-	Redis
+	SingleClient CoordinatorType = "SingleClient"
+	Mpi                          = "MPI"
+	Backend                      = "Backend"
+)
+
+type BackendType string
+
+const (
+	Memory BackendType = "Memory"
+	Rados              = "Rados"
+	Redis              = "Redis"
+)
+
+type VersionIdGenerationMethod string
+
+const (
+	SHA1       VersionIdGenerationMethod = "SHA1"
+	Sequential                           = "Sequential"
 )
 
 /*
@@ -35,11 +45,13 @@ const (
 
 	Default: @c ClienSync::AT_EACH_COMMIT
 */
+type ClientSyncMode string
+
 const (
-	None = 0
-	AtCreate
-	AtCommit
-	AtAddOrRemove
+	None          ClientSyncMode = "None"
+	AtCreate                     = "AtCreate"
+	AtCommit                     = "AtCommit"
+	AtAddOrRemove                = "AtAddOrRemove"
 )
 
 // comma-separated list of URIs. @see http://cpp-netlib.org/0.10.1/in_depth/uri.html
@@ -50,13 +62,13 @@ type Options struct {
 	RepositoryName string
 
 	// type of coordinator
-	CoordinatorType int
+	Coordinator CoordinatorType
 
 	// type of object database to use. Default: Memory
-	ObjectDbType int
+	ObjectDbType BackendType
 
 	// type of object database to use. Default: Memory
-	MetaDbType int
+	MetaDbType BackendType
 
 	// address of the metadb server, for remote-based implementations
 	MetaDbServerAddress uri
@@ -67,10 +79,13 @@ type Options struct {
 	// whether to initialize the metadb if empty
 	MetaDbInitializeIfEmpty bool
 
+	// ID generation
+	IdGenerationMethod VersionIdGenerationMethod
+
 	// what to use to seed the internal hashing algorithm
 	HashSeed string
 
-	ClientSyncMode int
+	ClientSync ClientSyncMode
 
 	// For @c MPI coordinator class, this denotes the leader rank options for mpi coordination. Default: 0
 	//mpi_leader_rank
@@ -87,10 +102,11 @@ type Options struct {
 }
 
 func NewOptions() (o Options) {
-	o.CoordinatorType = SingleClient
+	o.Coordinator = SingleClient
 	o.ObjectDbType = Memory
 	o.MetaDbType = Memory
-	o.ClientSyncMode = AtCommit
+	o.ClientSync = AtCommit
+	o.IdGenerationMethod = SHA1
 	o.RadosMetaDbPoolName = "data"
 	o.RadosObjDbPoolName = "data"
 	return

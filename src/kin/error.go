@@ -5,5 +5,5 @@ type KinError struct {
 }
 
 func (e KinError) Error() string {
-	return "diversion: " + e.Msg
+	return "kin: " + e.Msg
 }
