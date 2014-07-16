@@ -1,8 +1,8 @@
 package metadb
 
 import (
-	"diversion/opts"
-	"diversion/version"
+	"kin/opts"
+	"kin/version"
 )
 
 type MemMetaDB struct {
@@ -30,7 +30,7 @@ func (db MemMetaDB) Close() (err error) {
 func (db MemMetaDB) IsEmpty() (bool, error) {
 	return true, nil
 }
-func (db MemMetaDB) MakeHead(v string) (err error) {
+func (db MemMetaDB) MakeHead(v string) (id string, err error) {
 	// // this has to be atomic
 	// // {
 	// if id:= GetHeadId() != v.Parent() {

@@ -1,7 +1,7 @@
 package metadb
 
 import (
-	"diversion/version"
+	"kin/version"
 )
 
 type lockMode int
@@ -34,7 +34,7 @@ type MetaDB interface {
 	GetHeadId() (vid string, err error)
 
 	// makes the given version the head of the repo.
-	MakeHead(v string) (err error)
+	MakeHead(v string) (id string, err error)
 
 	// changes the status of a version stored at the backed to COMMITTED
 	Commit(v string) (err error)

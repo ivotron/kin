@@ -1,9 +1,9 @@
-package diversion
+package kin
 
-type DiversionError struct {
+type KinError struct {
 	Msg string
 }
 
-func (e DiversionError) Error() string {
+func (e KinError) Error() string {
 	return "diversion: " + e.Msg
 }

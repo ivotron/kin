@@ -1,6 +1,6 @@
 package metadb
 
-import "diversion/opts"
+import "kin/opts"
 
 type RadosMetaDB struct {
 	PoolName string

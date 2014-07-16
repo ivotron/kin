@@ -1,10 +1,10 @@
-package diversion
+package kin
 
 import (
-	"diversion/coordination"
-	"diversion/metadb"
-	"diversion/opts"
 	"fmt"
+	"kin/coordination"
+	"kin/metadb"
+	"kin/opts"
 )
 
 type Repository interface {
@@ -16,8 +16,8 @@ type Repository interface {
 	Commit(v string) (err error)
 
 	// makes the given version the head of the repo. Returns the ID of the committed version if it successfully
-	// made the given version the head, otherwise returns the ID of the current. The latter happens when another
-	// commit was made the head
+	// made it the head, otherwise returns the ID of the current one. The latter happens as a result of a race
+	// condition: another commit was made the head between the clone/commit operation
 	MakeHead(v string) (id string, err error)
 
 	// retrieves the id of the latest committed version.
@@ -46,7 +46,7 @@ func NewRepository(conf opts.Options) (repo Repository, err error) {
 		}
 
 	default:
-		return nil, DiversionError{fmt.Sprintf("unknown metadata db type %d", conf.MetaDbType)}
+		return nil, KinError{fmt.Sprintf("unknown metadata db type %d", conf.MetaDbType)}
 
 	}
 
@@ -60,6 +60,6 @@ func NewRepository(conf opts.Options) (repo Repository, err error) {
 		}
 
 	default:
-		return nil, DiversionError{fmt.Sprintf("unknown coordination type %d", conf.CoordinatorType)}
+		return nil, KinError{fmt.Sprintf("unknown coordination type %d", conf.CoordinatorType)}
 	}
 }

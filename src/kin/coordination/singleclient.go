@@ -1,8 +1,8 @@
 package coordination
 
 import (
-	"diversion/metadb"
-	"diversion/opts"
+	"kin/metadb"
+	"kin/opts"
 )
 
 type SingleClientCoordinator struct {

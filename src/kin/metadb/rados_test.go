@@ -3,7 +3,7 @@ package metadb
 import (
 	"testing"
 
-	"diversion/opts"
+	"kin/opts"
 
 	"github.com/stretchr/testify/assert"
 )
