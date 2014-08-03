@@ -1,8 +1,8 @@
 package metadb
 
 import (
-	"kin/opts"
-	"kin/version"
+	"github.com/ivotron/kin/opts"
+	"github.com/ivotron/kin/version"
 )
 
 type MemMetaDB struct {
@@ -12,7 +12,7 @@ func NewMemMetaDB(o opts.Options) (db *MemMetaDB, err error) {
 	return &MemMetaDB{}, nil
 }
 
-func (db MemMetaDB) Clone(p string, seed string, m lockMode, key string) (v string, err error) {
+func (db MemMetaDB) Clone(p string, c string, m LockMode, key string) (v string, err error) {
 	return
 }
 func (db MemMetaDB) Checkout(id string) (version version.Version, err error) {

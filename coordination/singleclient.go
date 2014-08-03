@@ -1,8 +1,8 @@
 package coordination
 
 import (
-	"kin/metadb"
-	"kin/opts"
+	"github.com/ivotron/kin/metadb"
+	"github.com/ivotron/kin/opts"
 )
 
 type SingleClientCoordinator struct {

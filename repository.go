@@ -1,10 +1,18 @@
 package kin
 
 import (
-	"kin/coordination"
-	"kin/metadb"
-	"kin/opts"
+	"github.com/ivotron/kin/coordination"
+	"github.com/ivotron/kin/metadb"
+	"github.com/ivotron/kin/opts"
 )
+
+type KinError struct {
+	Msg string
+}
+
+func (e KinError) Error() string {
+	return "kin: " + e.Msg
+}
 
 type Repository interface {
 	// creates a version based on a given one. The ID associated to the new version is assigned according to the

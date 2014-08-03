@@ -1,8 +1,9 @@
 package version
 
 import (
-	"kin/opts"
 	"strconv"
+
+	"github.com/ivotron/kin/opts"
 )
 
 type KinIDGenerationError struct {

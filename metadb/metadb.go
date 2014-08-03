@@ -4,16 +4,16 @@ import (
 	"kin/version"
 )
 
-type lockMode int
+type LockMode int
 
 const (
-	ExclusiveLock lockMode = 0
+	ExclusiveLock LockMode = 0
 	SharedLock
 )
 
 type MetaDB interface {
 	// Create a new version based on given parent
-	Clone(p string, seed string, mode lockMode, key string) (v string, err error)
+	Clone(p string, seed string, mode LockMode, key string) (v string, err error)
 
 	// retrieves the metadata of the given version id
 	Checkout(id string) (version version.Version, err error)
