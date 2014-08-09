@@ -1,7 +1,7 @@
 package metadb
 
 import (
-	"kin/version"
+	"github.com/ivotron/kin/version"
 )
 
 type LockMode int

@@ -1,6 +1,6 @@
 package metadb
 
-import "kin/opts"
+import "github.com/ivotron/kin/opts"
 
 type RadosMetaDB struct {
 	PoolName string
@@ -10,7 +10,7 @@ func NewRadosMetaDB(o opts.Options) *RadosMetaDB {
 	return &RadosMetaDB{PoolName: o.RadosMetaDbPoolName}
 }
 
-func (db RadosMetaDB) Create(p string, seed string, m lockMode, key string) (v string, err error) {
+func (db RadosMetaDB) Create(p string, seed string, m LockMode, key string) (v string, err error) {
 	return
 }
 func (db RadosMetaDB) Checkout(id string) (version string, err error) {
