@@ -1,4 +1,4 @@
-package opts
+package kin
 
 type CoordinatorType string
 

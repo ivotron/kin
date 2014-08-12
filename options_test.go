@@ -1,4 +1,4 @@
-package opts
+package kin
 
 import (
 	"testing"

@@ -1,23 +1,9 @@
 package kin
 
-import (
-	"github.com/ivotron/kin/coordination"
-	"github.com/ivotron/kin/metadb"
-	"github.com/ivotron/kin/opts"
-)
-
-type KinError struct {
-	Msg string
-}
-
-func (e KinError) Error() string {
-	return "kin: " + e.Msg
-}
-
 type Repository interface {
 	// creates a version based on a given one. The ID associated to the new version is assigned according to the
 	// version ID generation technique (e.g. SHA1, sequential, etc.)
-	Clone(parent string) (v string, err error)
+	Checkout(parent string) (v string, err error)
 
 	// marks version as committed. Once a version is committed, no more additions/removals to it are allowed.
 	Commit(v string) (err error)
@@ -41,32 +27,4 @@ type Repository interface {
 
 	// whether the repository is empty.
 	IsRepositoryEmpty() (empty bool, err error)
-}
-
-func NewRepository(conf opts.Options) (repo Repository, err error) {
-	var db metadb.MetaDB
-
-	switch conf.MetaDbType {
-	case opts.Memory:
-		if db, err = metadb.NewMemMetaDB(conf); err != nil {
-			return nil, err
-		}
-
-	default:
-		return nil, KinError{"unknown metadata db type " + string(conf.MetaDbType)}
-
-	}
-
-	switch conf.Coordinator {
-
-	case opts.SingleClient:
-		if repo, err := coordination.NewSingleClientCoordinator(conf, db); err != nil {
-			return nil, err
-		} else {
-			return repo, nil
-		}
-
-	default:
-		return nil, KinError{"unknown coordination type " + string(conf.Coordinator)}
-	}
 }

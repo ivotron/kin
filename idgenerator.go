@@ -1,9 +1,7 @@
-package version
+package kin
 
 import (
 	"strconv"
-
-	"github.com/ivotron/kin/opts"
 )
 
 type KinIDGenerationError struct {
@@ -15,9 +13,9 @@ func (e KinIDGenerationError) Error() string {
 }
 
 // Generate creates a version identifier based on the provided method
-func Generate(parent string, method opts.VersionIdGenerationMethod) (string, error) {
+func Generate(parent string, method VersionIdGenerationMethod) (string, error) {
 	switch method {
-	case opts.Sequential:
+	case Sequential:
 		if i, err := strconv.Atoi(parent); err != nil {
 			return "", err
 		} else {

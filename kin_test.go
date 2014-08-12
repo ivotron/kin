@@ -63,3 +63,8 @@ func checkFatal(t *testing.T, err error) {
 	}
 	t.Fatalf("Fail at %v:%v; %v", file, line, err)
 }
+
+// kin
+// kin status
+// kin init
+// kin add objects/
