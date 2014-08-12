@@ -3,7 +3,7 @@ package version
 import (
 	"testing"
 
-	"kin/opts"
+	"github.com/ivotron/kin/opts"
 
 	"github.com/stretchr/testify/assert"
 )
