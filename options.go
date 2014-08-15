@@ -5,13 +5,15 @@ type CoordinatorType string
 const (
 	SingleClient CoordinatorType = "SingleClient"
 	Mpi                          = "MPI"
-	Backend                      = "Backend"
+	Back                         = "Back"
 )
 
 type BackendType string
 
 const (
 	Memory BackendType = "Memory"
+	Posix              = "Posix"
+	Git                = "Git"
 	Rados              = "Rados"
 	Redis              = "Redis"
 )
@@ -94,20 +96,26 @@ type Options struct {
 	// communicators is an int. Default: NULL.
 	//void* mpi_comm
 
-	// Rados pool name for the object db
-	RadosObjDbPoolName string
-
-	// Rados pool name for the metadata db. Default: "data".
+	// Rados
+	RadosObjDbPoolName  string
 	RadosMetaDbPoolName string
+
+	// Git
+	GitPath string
+
+	// Posix
+	PosixPath string
 }
 
 func NewOptions() (o Options) {
+	o.RepositoryName = "."
 	o.Coordinator = SingleClient
-	o.ObjectDbType = Memory
-	o.MetaDbType = Memory
+	o.ObjectDbType = Posix
+	o.MetaDbType = Git
 	o.ClientSync = AtCommit
 	o.IdGenerationMethod = SHA1
 	o.RadosMetaDbPoolName = "data"
 	o.RadosObjDbPoolName = "data"
+	o.GitPath = "."
 	return
 }

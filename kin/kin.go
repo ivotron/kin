@@ -8,29 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type KinError struct {
-	Msg string
-}
-
-func (e KinError) Error() string {
-	return "kin: " + e.Msg
-}
-
-func NewRepository(conf kin.Options) (repo kin.Repository, err error) {
-	switch conf.Coordinator {
-
-	case kin.SingleClient:
-		if repo, err := kin.NewSingleClientCoordinator(conf); err != nil {
-			return nil, err
-		} else {
-			return repo, nil
-		}
-
-	default:
-		return nil, KinError{"unknown coordination type " + string(conf.Coordinator)}
-	}
-}
-
 func main() {
 	var cmd *exec.Cmd
 
@@ -43,6 +20,18 @@ func main() {
 		return
 	}
 	// }
+
+	var cmdInit = &cobra.Command{
+		Use:   "init",
+		Short: "",
+		Long:  ``,
+		Run: func(cobraCmd *cobra.Command, args []string) {
+			if _, err := kin.InitRepository(); err != nil {
+				println(err.Error())
+				return
+			}
+		},
+	}
 
 	var cmdStatus = &cobra.Command{
 		Use:   "status",
@@ -206,8 +195,8 @@ func main() {
 
 	var rootCmd = &cobra.Command{Use: "kin"}
 
-	rootCmd.AddCommand(cmdStatus, cmdSubmodule, cmdAdd, cmdCommit, cmdReset, cmdRemove,
-		cmdBranch, cmdMerge, cmdRebase, cmdFetch)
+	rootCmd.AddCommand(cmdInit, cmdStatus, cmdSubmodule, cmdAdd, cmdCommit, cmdReset,
+		cmdRemove, cmdBranch, cmdMerge, cmdRebase, cmdFetch)
 
 	cmdSubmodule.AddCommand(cmdSubmoduleAdd, cmdSubmoduleStatus, cmdSubmoduleUpdate)
 
