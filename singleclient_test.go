@@ -14,8 +14,7 @@ func TestInitRepo(t *testing.T) {
 	path, err := ioutil.TempDir("", "kin")
 	assert.Nil(t, os.Chdir(path))
 
-	_, err = InitRepository()
-	assert.Nil(t, err)
+	assert.Nil(t, Init())
 
 	_, err = os.Stat(".git/")
 	assert.Nil(t, err)

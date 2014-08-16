@@ -10,7 +10,7 @@ func NewSingleClientCoordinator(o Options, mdb Backend, odb Backend) (c *SingleC
 	return &SingleClientCoordinator{repoName: o.RepositoryName, odb: odb, mdb: mdb}, nil
 }
 
-func (c SingleClientCoordinator) InitRepository() (err error) {
+func (c SingleClientCoordinator) Init() (err error) {
 	if c.mdb.IsInitialized() {
 		return KinError{"Meta backend already initialized"}
 	}
@@ -29,30 +29,25 @@ func (c SingleClientCoordinator) InitRepository() (err error) {
 	return
 }
 
-func (c SingleClientCoordinator) Checkout(parent string) (v string, err error) {
-	return "", nil
+func (c SingleClientCoordinator) GetStatus() Status {
+	return StatusError
 }
 
-func (c SingleClientCoordinator) Commit(v string) (err error) {
-	return nil
+func (c SingleClientCoordinator) Checkout(parent string) (err error) {
+	return KinError{"not yet"}
 }
 
-func (c SingleClientCoordinator) MakeHead(v string) (id string, err error) {
-	return "", nil
+func (c SingleClientCoordinator) Commit() (err error) {
+	return KinError{"not yet"}
 }
 
-func (c SingleClientCoordinator) GetHeadId() (vid string, err error) {
-	return "", nil
+func (c SingleClientCoordinator) Add(oids []string) (err error) {
+	return KinError{"not yet"}
 }
 
-func (c SingleClientCoordinator) Add(v string, oid string) (err error) {
-	return nil
+func (c SingleClientCoordinator) Remove(oids []string) (err error) {
+	return KinError{"not yet"}
 }
-
-func (c SingleClientCoordinator) Remove(v string, oid string) (err error) {
-	return nil
-}
-
-func (c SingleClientCoordinator) IsRepositoryEmpty() (isEmpty bool, err error) {
-	return true, nil
+func (c SingleClientCoordinator) Diff(objrefs []string) (string, error) {
+	return "", KinError{"not yet"}
 }

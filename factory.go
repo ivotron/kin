@@ -1,15 +1,19 @@
 package kin
 
-func Init() (repo Repository, err error) {
-	if repo, err = OpenRepository(); err != nil {
-		return nil, err
+func Init() (err error) {
+	repo, err := OpenRepository()
+
+	if err != nil {
+		return
 	}
-	err = repo.InitRepository()
-	return
+
+	return repo.Init()
 }
 
 func Add(args []string) (err error) {
-	if repo, err = OpenRepository(); err != nil {
+	repo, err := OpenRepository()
+
+	if err != nil {
 		return
 	}
 
@@ -21,7 +25,9 @@ func Add(args []string) (err error) {
 }
 
 func Checkout(id string) (err error) {
-	if repo, err = OpenRepository(); err != nil {
+	repo, err := OpenRepository()
+
+	if err != nil {
 		return
 	}
 
@@ -33,7 +39,9 @@ func Checkout(id string) (err error) {
 }
 
 func Commit() (err error) {
-	if repo, err = OpenRepository(); err != nil {
+	repo, err := OpenRepository()
+
+	if err != nil {
 		return
 	}
 
@@ -45,7 +53,9 @@ func Commit() (err error) {
 }
 
 func Remove(args []string) (err error) {
-	if repo, err = OpenRepository(); err != nil {
+	repo, err := OpenRepository()
+
+	if err != nil {
 		return
 	}
 
@@ -57,7 +67,9 @@ func Remove(args []string) (err error) {
 }
 
 func Diff(args []string) (diffoutput string, err error) {
-	if repo, err = OpenRepository(); err != nil {
+	repo, err := OpenRepository()
+
+	if err != nil {
 		return
 	}
 

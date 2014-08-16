@@ -4,16 +4,8 @@ import (
 	"container/list"
 )
 
-type status int
-
-// status
-const (
-	Staged status = iota
-	Committed
-)
-
 type Version struct {
-	Status  status
+	Status  Status
 	Parent  string
 	Id      string
 	Objects list.List
