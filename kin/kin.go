@@ -22,11 +22,28 @@ func main() {
 	// }
 
 	var cmdInit = &cobra.Command{
-		Use:   "init",
+		Use:   "init [--odb <backend>] [--mdb <backend>]",
 		Short: "",
 		Long:  ``,
 		Run: func(cobraCmd *cobra.Command, args []string) {
-			if _, err := kin.InitRepository(); err != nil {
+			if len(args) > 0 {
+				println("Arguments not supported yet")
+				return
+			}
+
+			if _, err := kin.Init(); err != nil {
+				println(err.Error())
+				return
+			}
+		},
+	}
+
+	var cmdAdd = &cobra.Command{
+		Use:   "add <path>",
+		Short: "",
+		Long:  ``,
+		Run: func(cobraCmd *cobra.Command, args []string) {
+			if _, err := kin.Add(args); err != nil {
 				println(err.Error())
 				return
 			}

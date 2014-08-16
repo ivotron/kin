@@ -1,5 +1,12 @@
 package kin
 
+type Status int
+
+const (
+	Committed Status = "Committed"
+	Staged           = "Staged"
+)
+
 type Repository interface {
 	// inits repository in current directory
 	InitRepository() error
@@ -20,7 +27,7 @@ type Repository interface {
 	GetHeadId() (string, error)
 
 	// adds an object to a version.
-	Add(v string, oid string) error
+	Add(args []string, oid string) error
 
 	// removes an object from a version
 	Remove(v string, oid string) error

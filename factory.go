@@ -1,19 +1,70 @@
 package kin
 
-func OpenRepository() (repo Repository, err error) {
-	conf := NewOptions()
-	return NewRepositoryWithOptions(conf)
-}
-
-func InitRepository() (repo Repository, err error) {
-	if repo, err = NewRepository(); err != nil {
+func Init() (repo Repository, err error) {
+	if repo, err = OpenRepository(); err != nil {
 		return nil, err
 	}
 	err = repo.InitRepository()
 	return
 }
 
-func NewRepository() (repo Repository, err error) {
+func Add(args []string) (err error) {
+	if repo, err = OpenRepository(); err != nil {
+		return
+	}
+
+	if repo.GetStatus() == Committed {
+		return KinError{"Create a staged commit by checking out one first."}
+	}
+
+	return repo.Add(args)
+}
+
+func Checkout(id string) (err error) {
+	if repo, err = OpenRepository(); err != nil {
+		return
+	}
+
+	if repo.GetStatus() == Staged {
+		return KinError{"Commit staged changes first."}
+	}
+
+	return repo.Checkout(id)
+}
+
+func Commit() (err error) {
+	if repo, err = OpenRepository(); err != nil {
+		return
+	}
+
+	if repo.GetStatus() == Committed {
+		return KinError{"Nothing to commit; create a staged commit first."}
+	}
+
+	return repo.Commit()
+}
+
+func Remove(args []string) (err error) {
+	if repo, err = OpenRepository(); err != nil {
+		return
+	}
+
+	if repo.GetStatus() == Committed {
+		return KinError{"Create a staged commit by checking out one first."}
+	}
+
+	return repo.Remove(args)
+}
+
+func Diff(args []string) (diffoutput string, err error) {
+	if repo, err = OpenRepository(); err != nil {
+		return
+	}
+
+	return repo.Diff(args)
+}
+
+func OpenRepository() (repo Repository, err error) {
 	conf := NewOptions()
 	return NewRepositoryWithOptions(conf)
 }
