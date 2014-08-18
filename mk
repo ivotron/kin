@@ -2,13 +2,15 @@
 
 function deps {
 echo "Fetching dependencies to $GOPATH..."
-printf "   (00/03)\r"
+printf "   (00/04)\r"
   go get -u github.com/stretchr/testify
-printf "## (01/03)\r"
+printf "## (01/04)\r"
   go get -u github.com/libgit2/git2go
-printf "## (02/03)\r"
+printf "## (02/04)\r"
   go get -u github.com/spf13/cobra
-printf "## (03/03)\r"
+printf "## (03/04)\r"
+  go get -u github.com/dchest/uniuri
+printf "## (04/04)\r"
 printf "\n"
 }
 

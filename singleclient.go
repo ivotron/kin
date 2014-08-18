@@ -10,6 +10,43 @@ func NewSingleClientCoordinator(o Options, mdb Backend, odb Backend) (c *SingleC
 	return &SingleClientCoordinator{repoName: o.RepositoryName, odb: odb, mdb: mdb}, nil
 }
 
+func (c SingleClientCoordinator) checkBackends(status Status) error {
+	if !c.mdb.IsInitialized() {
+		return KinError{"Meta backend not initialized"}
+	}
+	if !c.odb.IsInitialized() {
+		return KinError{"Object backend not initialized"}
+	}
+
+	if c.mdb.GetStatus() == status {
+		return KinError{"Wrong backend status; expecting the oposite."}
+	}
+
+	if c.mdb.GetStatus() != c.odb.GetStatus() {
+		return KinError{"Fatal error with backends."}
+	}
+
+	return nil
+}
+
+func (c SingleClientCoordinator) IsInitialized() (isInitialized bool) {
+	if c.mdb.IsInitialized() && c.odb.IsInitialized() {
+		return true
+	}
+	return false
+}
+
+func (c SingleClientCoordinator) Open() (err error) {
+	if err = c.mdb.Open(); err != nil {
+		return
+	}
+	if err = c.odb.Open(); err != nil {
+		return
+	}
+
+	return nil
+}
+
 func (c SingleClientCoordinator) Init() (err error) {
 	if c.mdb.IsInitialized() {
 		return KinError{"Meta backend already initialized"}
@@ -30,24 +67,89 @@ func (c SingleClientCoordinator) Init() (err error) {
 }
 
 func (c SingleClientCoordinator) GetStatus() Status {
-	return StatusError
+	return c.mdb.GetStatus()
 }
 
-func (c SingleClientCoordinator) Checkout(parent string) (err error) {
-	return KinError{"not yet"}
+func (c SingleClientCoordinator) Checkout(parentCommit string) (stagedId string, 
+		oids[]string, err error) {
+
+	stagedId = ""
+	oids = nil
+
+	if err = c.checkBackends(Staged); err != nil {
+		return
+	}
+
+	// make this atomic
+	// {
+	if stagedId, oids, err = c.mdb.Checkout(parentCommit); err != nil {
+		return
+	}
+	if err = c.odb.CheckoutObjects(stagedId, oids); err != nil {
+		return
+	}
+	// }
+
+	return
 }
 
 func (c SingleClientCoordinator) Commit() (err error) {
-	return KinError{"not yet"}
+	if err = c.checkBackends(Committed); err != nil {
+		return
+	}
+
+	// make this atomic
+	// {
+	if err = c.odb.Commit(); err != nil {
+		return
+	}
+	if err = c.mdb.Commit(); err != nil {
+		return
+	}
+	// }
+
+	return nil
 }
 
 func (c SingleClientCoordinator) Add(oids []string) (err error) {
-	return KinError{"not yet"}
+	if err = c.checkBackends(Staged); err != nil {
+		return
+	}
+
+	// make this atomic
+	// {
+	if err = c.odb.Add(oids); err != nil {
+		return
+	}
+	if err = c.mdb.Add(oids); err != nil {
+		return
+	}
+	// }
+
+	return nil
 }
 
 func (c SingleClientCoordinator) Remove(oids []string) (err error) {
-	return KinError{"not yet"}
+	if err = c.checkBackends(Staged); err != nil {
+		return
+	}
+
+	// make this atomic
+	// {
+	if err = c.odb.Remove(oids); err != nil {
+		return
+	}
+	if err = c.mdb.Remove(oids); err != nil {
+		return
+	}
+	// }
+
+	return nil
 }
+
 func (c SingleClientCoordinator) Diff(objrefs []string) (string, error) {
 	return "", KinError{"not yet"}
+}
+func (c SingleClientCoordinator) CheckoutObjects(stagedCommit string, oids []string) error {
+	return KinError{"not yet"}
 }

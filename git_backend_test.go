@@ -8,9 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGitBackendInit(t *testing.T) {
-	_, err := os.Getwd()
-	assert.Nil(t, err)
+func createGitBackend(t *testing.T) *GitBackend {
 	path, err := ioutil.TempDir("", "kin")
 	assert.Nil(t, os.Chdir(path))
 
@@ -19,13 +17,45 @@ func TestGitBackendInit(t *testing.T) {
 	backend, err := NewGitBackend(opts)
 	assert.NotNil(t, backend)
 	assert.Nil(t, err)
+	return backend
+}
 
-	_, err = os.Stat(".git/")
+func TestGitBackendInit(t *testing.T) {
+	backend := createGitBackend(t)
+	assert.NotNil(t, backend)
+
+	_, err := os.Stat(".git/")
 	assert.NotNil(t, err)
 
-	err = backend.Init()
-	assert.Nil(t, err)
+	assert.False(t, backend.IsInitialized())
+
+	assert.Nil(t, backend.Init())
+
+	assert.True(t, backend.IsInitialized())
 
 	_, err = os.Stat(".git/")
+	assert.Nil(t, err)
+	_, err = os.Stat(".gitignore")
+	assert.Nil(t, err)
+}
+
+func TestGitBackendOpen(t *testing.T) {
+	backend := createGitBackend(t)
+	assert.NotNil(t, backend)
+	assert.NotNil(t, backend.Open())
+	assert.Nil(t, backend.Init())
+	backend, err := NewGitBackend(NewOptions())
+	assert.NotNil(t, backend)
+	assert.Nil(t, err)
+	assert.Nil(t, backend.Open())
+}
+
+func TestGitBackendCheckout(t *testing.T) {
+	backend := createGitBackend(t)
+	assert.NotNil(t, backend)
+	assert.Nil(t, backend.Init())
+	_, _, err := backend.Checkout("master")
+	assert.NotNil(t, err)
+	_, _, err = backend.Checkout("HEAD")
 	assert.Nil(t, err)
 }

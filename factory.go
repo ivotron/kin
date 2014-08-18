@@ -1,7 +1,7 @@
 package kin
 
 func Init() (err error) {
-	repo, err := OpenRepository()
+	repo, err := NewRepository()
 
 	if err != nil {
 		return
@@ -17,25 +17,26 @@ func Add(args []string) (err error) {
 		return
 	}
 
-	if repo.GetStatus() == Committed {
-		return KinError{"Create a staged commit by checking out one first."}
-	}
-
 	return repo.Add(args)
 }
 
-func Checkout(id string) (err error) {
+func Checkout(id []string) (err error) {
+	if len(id) > 1 {
+		return KinError{"Only one reference allowed."}
+	}
+
 	repo, err := OpenRepository()
 
 	if err != nil {
 		return
 	}
 
-	if repo.GetStatus() == Staged {
-		return KinError{"Commit staged changes first."}
+	if len(id) == 0 {
+		_, _, err = repo.Checkout("HEAD")
+	} else {
+		_, _, err = repo.Checkout(id[0])
 	}
-
-	return repo.Checkout(id)
+	return
 }
 
 func Commit() (err error) {
@@ -43,10 +44,6 @@ func Commit() (err error) {
 
 	if err != nil {
 		return
-	}
-
-	if repo.GetStatus() == Committed {
-		return KinError{"Nothing to commit; create a staged commit first."}
 	}
 
 	return repo.Commit()
@@ -57,10 +54,6 @@ func Remove(args []string) (err error) {
 
 	if err != nil {
 		return
-	}
-
-	if repo.GetStatus() == Committed {
-		return KinError{"Create a staged commit by checking out one first."}
 	}
 
 	return repo.Remove(args)
@@ -77,6 +70,14 @@ func Diff(args []string) (diffoutput string, err error) {
 }
 
 func OpenRepository() (repo Repository, err error) {
+	if repo, err = NewRepository(); err != nil {
+		return
+	}
+	repo.Open()
+	return
+}
+
+func NewRepository() (repo Repository, err error) {
 	conf := NewOptions()
 	return NewRepositoryWithOptions(conf)
 }

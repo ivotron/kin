@@ -5,36 +5,45 @@ type Status int
 const (
 	Committed Status = iota
 	Staged
-	StatusError
 )
 
-type Repository interface {
-	// inits repository in current directory
+type Backend interface {
+	// inits backend in current directory
 	Init() error
 
-	// returns status of repo
+	// opens the backend
+	Open() error
+
+	// whether the backend has been initialized
+	IsInitialized() bool
+
+	// returns status of backend
 	GetStatus() Status
 
-	// creates a staged commit based on a parent given one
-	Checkout(parent string) error
+	// creates a staged commit based on a parent and returns the list of objects for that
+	// version
+	Checkout(parentCommit string) (stagedCommit string, oids []string, err error)
+
+	// check out a list of objects with given associated staged commit
+	CheckoutObjects(stagedCommit string, oids []string) error
 
 	// marks version as committed. Once a version is committed, no more additions/removals to it are allowed.
 	Commit() error
 
 	// adds an object to the current staged commit
-	Add(objrefs []string) error
+	Add(oids []string) error
 
 	// removes an object from the current staged commit
-	Remove(objrefs []string) error
+	Remove(oids []string) error
 
 	// retrieves the string representation of the diff for two given objects
-	Diff(objrefs []string) (string, error)
+	Diff(oids []string) (string, error)
 }
 
-type Backend interface {
-	Init() error
-	IsInitialized() bool
-}
+// TODO as we go along adding functionality, consider breaking up the Backend interface
+// (e.g. making ODB and MDB interfaces embed Backend in it)
+//   - CheckoutObjects() would be in ODB
+type Repository Backend
 
 type KinError struct {
 	Msg string

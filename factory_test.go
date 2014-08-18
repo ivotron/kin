@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInitRepo(t *testing.T) {
+func TestInit(t *testing.T) {
 	_, err := os.Getwd()
 	assert.Nil(t, err)
 	path, err := ioutil.TempDir("", "kin")
