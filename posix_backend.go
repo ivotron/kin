@@ -38,8 +38,8 @@ func (b PosixBackend) IsInitialized() bool {
 	_, err := os.Stat(b.base_path)
 	return (err == nil)
 }
-func (b PosixBackend) GetStatus() Status {
-	return Committed
+func (b PosixBackend) GetStatus() (Status, error) {
+	return Committed, nil
 }
 func (b PosixBackend) Commit() (err error) {
 	return KinError{"not yet"}

@@ -57,3 +57,33 @@ func TestGitBackendCheckout(t *testing.T) {
 	_, err := backend.Checkout("HEAD")
 	assert.Nil(t, err)
 }
+
+func TestGitBackendStatus(t *testing.T) {
+	backend := createGitBackend(t)
+	_, err := backend.GetStatus()
+	assert.NotNil(t, err)
+
+	assert.Nil(t, backend.Init())
+
+	status, err := backend.GetStatus()
+	assert.Nil(t, err)
+	assert.Equal(t, status, Committed)
+
+	_, err = backend.Checkout("HEAD")
+	assert.Nil(t, err)
+
+	status, err = backend.GetStatus()
+	assert.Nil(t, err)
+	assert.Equal(t, status, Staged)
+
+	os.Remove(".status")
+	_, err = backend.GetStatus()
+	assert.NotNil(t, err)
+
+	_, err = backend.Checkout("HEAD")
+	assert.Nil(t, err)
+
+	status, err = backend.GetStatus()
+	assert.Nil(t, err)
+	assert.Equal(t, status, Staged)
+}

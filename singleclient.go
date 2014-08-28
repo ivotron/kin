@@ -10,7 +10,7 @@ func NewSingleClientCoordinator(o Options, mdb Backend, odb Backend) (c *SingleC
 	return &SingleClientCoordinator{repoName: o.RepositoryName, odb: odb, mdb: mdb}, nil
 }
 
-func (c SingleClientCoordinator) checkBackends(status Status) error {
+func (c SingleClientCoordinator) checkBackends(expected Status) error {
 	if !c.mdb.IsInitialized() {
 		return KinError{"Meta backend not initialized"}
 	}
@@ -18,12 +18,16 @@ func (c SingleClientCoordinator) checkBackends(status Status) error {
 		return KinError{"Object backend not initialized"}
 	}
 
-	if c.mdb.GetStatus() == status {
-		return KinError{"Wrong backend status; expecting the oposite."}
+	if actual, err := c.mdb.GetStatus(); expected != actual {
+		return KinError{"Wrong meta backend status; expecting the oposite."}
+	} else if err != nil {
+		return err
 	}
 
-	if c.mdb.GetStatus() != c.odb.GetStatus() {
-		return KinError{"Fatal error with backends."}
+	if actual, err := c.odb.GetStatus(); expected != actual {
+		return KinError{"Wrong object backend status; expecting the oposite."}
+	} else if err != nil {
+		return err
 	}
 
 	return nil
@@ -66,7 +70,7 @@ func (c SingleClientCoordinator) Init() (err error) {
 	return
 }
 
-func (c SingleClientCoordinator) GetStatus() Status {
+func (c SingleClientCoordinator) GetStatus() (Status, error) {
 	return c.mdb.GetStatus()
 }
 

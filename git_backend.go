@@ -44,6 +44,9 @@ func (b *GitBackend) seedRepo() (err error) {
 	if err = ioutil.WriteFile(b.path+"/.staged", []byte(oid.String()), 0644); err != nil {
 		return
 	}
+	if err = ioutil.WriteFile(b.path+"/.status", []byte("Committed"), 0644); err != nil {
+		return
+	}
 	err = treeBuilder.Insert(".gitignore", oid, git.FilemodeBlob)
 	if err != nil {
 		return
@@ -84,7 +87,23 @@ func (b *GitBackend) IsInitialized() bool {
 	return (err == nil)
 }
 func (b *GitBackend) GetStatus() (status Status, err error) {
-	return Committed
+	if _, err = os.Stat(b.path + "/.status"); err != nil {
+		return
+	}
+
+	statusStr, err := ioutil.ReadFile(b.path + "/.status")
+	if err != nil {
+		return
+	}
+
+	switch string(statusStr) {
+	case "Committed":
+		return Committed, nil
+	case "Staged":
+		return Staged, nil
+	default:
+		return Committed, KinError{"Unexpected value of .status of repo: " + string(statusStr)}
+	}
 }
 
 func (b *GitBackend) Checkout(ref string) (stagedId string, err error) {
@@ -117,7 +136,7 @@ func (b *GitBackend) Checkout(ref string) (stagedId string, err error) {
 	if err = ioutil.WriteFile(b.path+"/.staged", []byte(stagedId), 0644); err != nil {
 		return
 	}
-	if err = ioutil.WriteFile(b.path+"/.status", []byte("staged"), 0644); err != nil {
+	if err = ioutil.WriteFile(b.path+"/.status", []byte("Staged"), 0644); err != nil {
 		return
 	}
 	// }
@@ -130,15 +149,19 @@ func (b *GitBackend) Commit() (err error) {
 }
 
 func (b *GitBackend) Add(oids []string) (err error) {
-	if b.GetStatus() == Committed {
+	if status, err := b.GetStatus(); status == Committed {
 		return KinError{"can't add when status is committed. Create a staged commit first"}
+	} else if err != nil {
+		return err
 	}
 	return KinError{"not yet"}
 }
 
 func (b *GitBackend) Remove(oids []string) (err error) {
-	if b.GetStatus() == Committed {
+	if status, err := b.GetStatus(); status == Committed {
 		return KinError{"can't remove when status is committed. Create a staged commit first"}
+	} else if err != nil {
+		return err
 	}
 	return KinError{"not yet"}
 }
