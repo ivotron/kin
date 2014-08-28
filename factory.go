@@ -32,9 +32,9 @@ func Checkout(id []string) (err error) {
 	}
 
 	if len(id) == 0 {
-		_, _, err = repo.Checkout("HEAD")
+		_, err = repo.Checkout("HEAD")
 	} else {
-		_, _, err = repo.Checkout(id[0])
+		_, err = repo.Checkout(id[0])
 	}
 	return
 }

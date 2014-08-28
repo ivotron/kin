@@ -44,11 +44,8 @@ func (b PosixBackend) GetStatus() Status {
 func (b PosixBackend) Commit() (err error) {
 	return KinError{"not yet"}
 }
-func (b PosixBackend) Checkout(parent string) (stagedCommit string, oids []string, err error) {
-	return "", nil, KinError{"not supported"}
-}
-func (b PosixBackend) CheckoutObjects(commit string, oids []string) (err error) {
-	return KinError{"not yet"}
+func (b PosixBackend) Checkout(parent string) (stagedCommit string, err error) {
+	return "", KinError{"not supported"}
 }
 func (b PosixBackend) Add(oids []string) (err error) {
 	return KinError{"not yet"}
@@ -59,6 +56,6 @@ func (b PosixBackend) Remove(oids []string) (err error) {
 func (b PosixBackend) Diff(objrefs []string) (string, error) {
 	return "", KinError{"not yet"}
 }
-func (b PosixBackend) Open() (error) {
+func (b PosixBackend) Open() error {
 	return KinError{"not yet"}
 }

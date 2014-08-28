@@ -3,6 +3,7 @@ package kin
 import (
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"time"
 
 	"github.com/libgit2/git2go"
@@ -35,9 +36,12 @@ func (b *GitBackend) seedRepo() (err error) {
 	}
 
 	// add .gitignore file containing .staged
-	gitIgnore := []byte(".staged\n")
+	gitIgnore := []byte(".staged\n.status")
 	oid, err := b.gitRepo.CreateBlobFromBuffer(gitIgnore)
 	if err != nil {
+		return
+	}
+	if err = ioutil.WriteFile(b.path+"/.staged", []byte(oid.String()), 0644); err != nil {
 		return
 	}
 	err = treeBuilder.Insert(".gitignore", oid, git.FilemodeBlob)
@@ -79,92 +83,43 @@ func (b *GitBackend) IsInitialized() bool {
 	_, err := os.Stat(b.path + "/.git")
 	return (err == nil)
 }
-func (b *GitBackend) GetStatus() Status {
+func (b *GitBackend) GetStatus() (status Status, err error) {
 	return Committed
 }
 
-func checkoutWalk(r *git.Repository, d string, t *git.Tree) (oids []string, err error) {
-
-	for i := uint64(0); i < t.EntryCount(); i++ {
-		te := t.EntryByIndex(i)
-		if te == nil {
-			return nil, KinError{"no entry in tree for given index "}
-		}
-
-		switch te.Type {
-
-		case git.ObjectTree:
-			subtree, err := r.LookupTree(te.Id)
-			if err != nil {
-				return nil, err
-			}
-
-			suboids, err := checkoutWalk(r, d+"/"+te.Name, subtree)
-			if err != nil {
-				return nil, err
-			}
-			oids = append(oids, suboids...)
-
-		case git.ObjectBlob:
-			oids = append(oids, d+"/"+te.Name)
-
-		default:
-			err = KinError{"unexpected object of type"}
-		}
-	}
-	return
-}
-
-func (b *GitBackend) Checkout(ref string) (stagedId string, oids []string, err error) {
+func (b *GitBackend) Checkout(ref string) (stagedId string, err error) {
 	if b.gitRepo == nil {
-		return "", nil, KinError{"nil pointer to git repo"}
+		return "", KinError{"nil pointer to git repo"}
 	}
-	if ref != "HEAD" {
-		return "", nil, KinError{"only support HEAD"}
-	}
-	// get objects inside commit {
-	obj, err := b.gitRepo.RevparseSingle(ref)
-	if err != nil {
-		return
-	}
-	if obj.Type() != git.ObjectCommit {
-		return "", nil, KinError{"error, expecing commit object for given reference"}
-	}
-
-	commit, err := b.gitRepo.LookupCommit(obj.Id())
-	if err != nil {
-		return
-	}
-
-	tree, err := commit.Tree()
-	if err != nil {
-		return
-	}
-
-	if oids, err = checkoutWalk(b.gitRepo, "", tree); err != nil {
-		return
-	}
-	// }
-
-	// get an ID to associate the staged changes {
-	parentId := commit.ParentId(0)
-	if parentId == nil {
-		// if no parents (first commit), then assign a fictitious one
-		parentId = git.NewOidFromBytes([]byte("12345678901234567890"))
-	}
-	stagedId, err = GenerateID(parentId.String(), SHA1)
-	if err != nil {
-		return
-	}
-
-	err = ioutil.WriteFile(b.path+"/.staged", []byte(stagedId), 0644)
-	if err != nil {
-		return
-	}
-	// }
 
 	// checkout working tree (will include logic for branches and detached HEADs later) {
-	err = b.gitRepo.CheckoutHead(&git.CheckoutOpts{Strategy: git.CheckoutForce})
+	cmd := exec.Command("git", "checkout", ref)
+
+	if _, err = cmd.Output(); err != nil {
+		return
+	}
+
+	// get an ID to associate the staged changes
+	// {
+	parentId, err := ioutil.ReadFile(b.path + "/.staged")
+	if err != nil {
+		return
+	}
+	if parentId == nil {
+		return "", KinError{"This sucks"}
+	}
+
+	stagedId, err = GenerateID(string(parentId), SHA1)
+	if err != nil {
+		return
+	}
+
+	if err = ioutil.WriteFile(b.path+"/.staged", []byte(stagedId), 0644); err != nil {
+		return
+	}
+	if err = ioutil.WriteFile(b.path+"/.status", []byte("staged"), 0644); err != nil {
+		return
+	}
 	// }
 
 	return
@@ -172,10 +127,6 @@ func (b *GitBackend) Checkout(ref string) (stagedId string, oids []string, err e
 
 func (b *GitBackend) Commit() (err error) {
 	return KinError{"not yet"}
-}
-
-func (b *GitBackend) CheckoutObjects(commit string, oids []string) (err error) {
-	return KinError{"not supported"}
 }
 
 func (b *GitBackend) Add(oids []string) (err error) {

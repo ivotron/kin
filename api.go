@@ -18,16 +18,13 @@ type Backend interface {
 	IsInitialized() bool
 
 	// returns status of backend
-	GetStatus() Status
+	GetStatus() (Status, error)
 
-	// creates a staged commit based on a parent and returns the list of objects for that
-	// version
-	Checkout(parentCommit string) (stagedCommit string, oids []string, err error)
+	// creates a staged commit based on a given one
+	Checkout(ref string) (stagedCommit string, err error)
 
-	// check out a list of objects with given associated staged commit
-	CheckoutObjects(stagedCommit string, oids []string) error
-
-	// marks version as committed. Once a version is committed, no more additions/removals to it are allowed.
+	// marks version as committed. Once a version is committed, no more additions/removals to
+	// it are allowed.
 	Commit() error
 
 	// adds an object to the current staged commit

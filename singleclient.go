@@ -70,11 +70,8 @@ func (c SingleClientCoordinator) GetStatus() Status {
 	return c.mdb.GetStatus()
 }
 
-func (c SingleClientCoordinator) Checkout(parentCommit string) (stagedId string, 
-		oids[]string, err error) {
-
+func (c SingleClientCoordinator) Checkout(parentCommit string) (stagedId string, err error) {
 	stagedId = ""
-	oids = nil
 
 	if err = c.checkBackends(Staged); err != nil {
 		return
@@ -82,10 +79,10 @@ func (c SingleClientCoordinator) Checkout(parentCommit string) (stagedId string,
 
 	// make this atomic
 	// {
-	if stagedId, oids, err = c.mdb.Checkout(parentCommit); err != nil {
+	if stagedId, err = c.mdb.Checkout(parentCommit); err != nil {
 		return
 	}
-	if err = c.odb.CheckoutObjects(stagedId, oids); err != nil {
+	if _, err = c.odb.Checkout(stagedId); err != nil {
 		return
 	}
 	// }
@@ -149,7 +146,4 @@ func (c SingleClientCoordinator) Remove(oids []string) (err error) {
 
 func (c SingleClientCoordinator) Diff(objrefs []string) (string, error) {
 	return "", KinError{"not yet"}
-}
-func (c SingleClientCoordinator) CheckoutObjects(stagedCommit string, oids []string) error {
-	return KinError{"not yet"}
 }

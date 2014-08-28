@@ -54,8 +54,6 @@ func TestGitBackendCheckout(t *testing.T) {
 	backend := createGitBackend(t)
 	assert.NotNil(t, backend)
 	assert.Nil(t, backend.Init())
-	_, _, err := backend.Checkout("master")
-	assert.NotNil(t, err)
-	_, _, err = backend.Checkout("HEAD")
+	_, err := backend.Checkout("HEAD")
 	assert.Nil(t, err)
 }
